@@ -46,19 +46,9 @@ dns:
     - rule-set:private
     - rule-set:category-ntp
     - rule-set:category-ads-all
-    - +.lan
-    - +.local
-    - +.home.arpa
-    - +.msftconnecttest.com
-    - +.msftncsi.com
-    - localhost.ptlogin2.qq.com
-    - +.stun.*.*
-    - +.stun.*.*.*
-    - +.stun.*.*.*.*
-    - +.srv.nintendo.net
-    - +.stun.playstation.net
-    - xbox.*.microsoft.com
-    - +.xboxlive.com
+    - rule-set:httpdns
+    - rule-set:fakeip-filter
+    - rule-set:pt-tracker
   use-hosts: false
   use-system-hosts: false
   default-nameserver:
@@ -75,8 +65,8 @@ dns:
     - https://1.1.1.1/dns-query#🚀 手动选择
     - https://8.8.8.8/dns-query#🚀 手动选择
   nameserver-policy:
-    rule-set:category-ads-all: rcode://success
-    rule-set:direct,private,cn,apple-cn:
+    rule-set:category-ads-all,httpdns: rcode://success
+    rule-set:direct,private,cn,apple-cn,microsoft-cn,games-cn:
       - 223.5.5.5
       - 119.29.29.29
 proxies: []
@@ -119,6 +109,18 @@ proxy-groups:
       - 🏡 家宽优选
       - __PROXY_NODES__
   - name: 🔍 谷歌服务
+    type: select
+    include-all-proxies: true
+    exclude-filter: '-|Big'
+    exclude-type: ss
+    proxies:
+      - 🚀 手动选择
+      - ♻️ 自动选择
+      - 🏡 家宽优选
+      - __PROXY_NODES__
+      - DIRECT
+      - REJECT
+  - name: 📲 电报消息
     type: select
     include-all-proxies: true
     exclude-filter: '-|Big'
@@ -182,7 +184,8 @@ proxy-groups:
     filter: '-|Big'
     proxies:
       - __PROXY_NODES__
-    dialer-proxy-group: 💻 前置节点
+    # 如需链式前置转发，请在对应家宽节点或 proxy-providers.<name>.override 中配置：
+    # dialer-proxy: 💻 前置节点
 rule-providers:
   direct:
     type: http
@@ -208,6 +211,30 @@ rule-providers:
     proxy: 🚀 手动选择
     path: ./rule_provider/category-ads-all.mrs
     url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/category-ads-all.mrs
+  httpdns:
+    type: http
+    behavior: domain
+    format: mrs
+    interval: 86400
+    proxy: 🚀 手动选择
+    path: ./rule_provider/httpdns.mrs
+    url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/httpdns.mrs
+  httpdns-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    interval: 86400
+    proxy: 🚀 手动选择
+    path: ./rule_provider/httpdns-ip.mrs
+    url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/httpdns-ip.mrs
+  fakeip-filter:
+    type: http
+    behavior: domain
+    format: mrs
+    interval: 86400
+    proxy: 🚀 手动选择
+    path: ./rule_provider/fakeip-filter.mrs
+    url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/fakeip-filter.mrs
   private:
     type: http
     behavior: domain
@@ -224,6 +251,22 @@ rule-providers:
     proxy: 🚀 手动选择
     path: ./rule_provider/category-ntp.mrs
     url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/category-ntp.mrs
+  pt-tracker:
+    type: http
+    behavior: domain
+    format: mrs
+    interval: 86400
+    proxy: 🚀 手动选择
+    path: ./rule_provider/pt-tracker.mrs
+    url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/pt-tracker.mrs
+  games-cn:
+    type: http
+    behavior: domain
+    format: mrs
+    interval: 86400
+    proxy: 🚀 手动选择
+    path: ./rule_provider/games-cn.mrs
+    url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/games-cn.mrs
   apple-cn:
     type: http
     behavior: domain
@@ -232,6 +275,30 @@ rule-providers:
     proxy: 🚀 手动选择
     path: ./rule_provider/apple-cn.mrs
     url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/apple-cn.mrs
+  microsoft-cn:
+    type: http
+    behavior: domain
+    format: mrs
+    interval: 86400
+    proxy: 🚀 手动选择
+    path: ./rule_provider/microsoft-cn.mrs
+    url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/microsoft-cn.mrs
+  telegram:
+    type: http
+    behavior: domain
+    format: mrs
+    interval: 86400
+    proxy: 🚀 手动选择
+    path: ./rule_provider/telegram.mrs
+    url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/telegram.mrs
+  telegramip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    interval: 86400
+    proxy: 🚀 手动选择
+    path: ./rule_provider/telegramip.mrs
+    url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/telegramip.mrs
   cn:
     type: http
     behavior: domain
@@ -326,22 +393,29 @@ rules:
   - RULE-SET,private,DIRECT
   - RULE-SET,lanip,DIRECT,no-resolve
   - RULE-SET,category-ntp,DIRECT
+  - RULE-SET,httpdns,REJECT
+  - RULE-SET,httpdns-ip,REJECT,no-resolve
   - RULE-SET,category-ads-all,REJECT
+  - RULE-SET,pt-tracker,DIRECT
   - AND,((NETWORK,udp),(DST-PORT,443),(OR,((RULE-SET,ai),(RULE-SET,gemini)))),REJECT
   - RULE-SET,gemini,🔍 谷歌服务
   - RULE-SET,google,🔍 谷歌服务
   - RULE-SET,ai,🤖 AI 服务
+  - RULE-SET,telegram,📲 电报消息
   - DOMAIN,tf-feedback.itunes.apple.com,🍎 苹果服务
+  - RULE-SET,apple-cn,DIRECT
+  - RULE-SET,microsoft-cn,DIRECT
+  - RULE-SET,games-cn,DIRECT
   - RULE-SET,scholar,📚 学术资源
   - AND,((RULE-SET,dev),(RULE-SET,non-cn)),🛠️ 开发工具
   - AND,((RULE-SET,apple),(RULE-SET,non-cn)),🍎 苹果服务
   - AND,((RULE-SET,microsoft),(RULE-SET,non-cn)),Ⓜ️ 微软服务
   - AND,((NETWORK,udp),(DST-PORT,443),(RULE-SET,non-cn)),REJECT
   - RULE-SET,non-cn,🚀 手动选择
-  - RULE-SET,apple-cn,DIRECT
   - RULE-SET,cn,DIRECT
   - RULE-SET,dev,🛠️ 开发工具
   - RULE-SET,apple,🍎 苹果服务
   - RULE-SET,microsoft,Ⓜ️ 微软服务
+  - RULE-SET,telegramip,📲 电报消息,no-resolve
   - RULE-SET,cnip,DIRECT,no-resolve
   - MATCH,🚀 手动选择

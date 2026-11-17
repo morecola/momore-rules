@@ -101,7 +101,9 @@ def fetch_text(urls: list[str], timeout: int = 30, retries: int = 3) -> str:
 # ---------------------------------------------------------------------------
 def clean_line(raw: str) -> str | None:
     line = raw.strip()
-    if not line or line.startswith(("#", "//", ";")):
+    if not line or line.startswith(("#", "//", ";", "!")):
+        return None
+    if line.startswith("[") and line.endswith("]"):
         return None
     if line.startswith("payload:"):
         return None
@@ -136,62 +138,90 @@ def is_valid_domain(d: str) -> bool:
 class DomainSet:
     suffixes: set[str] = field(default_factory=set)   # 对应 +.example.com（匹配自身及所有子域）
     exacts: set[str] = field(default_factory=set)     # 对应 example.com（仅精确匹配）
-    wildcards: set[str] = field(default_factory=set)  # 对应含内部 * 的通配域名（如 xbox.*.microsoft.com）
+    wildcards: set[str] = field(default_factory=set)  # 对应含 * 的通配域名（如 +.stun.*.* / xbox.*.microsoft.com）
     raw_count: int = 0
 
-    def add_suffix(self, domain: str) -> None:
-        d = domain.strip().lower().lstrip(".")
-        if is_valid_domain(d) and "*" not in d:
-            self.suffixes.add(d)
-            self.raw_count += 1
-
-    def add_exact(self, domain: str) -> None:
+    def add_suffix(self, domain: str) -> bool:
         d = domain.strip().lower().lstrip(".")
         if not is_valid_domain(d):
-            return
+            return False
+        if "*" in d:
+            self.wildcards.add(f"+.{d}")
+        else:
+            self.suffixes.add(d)
+        self.raw_count += 1
+        return True
+
+    def add_exact(self, domain: str) -> bool:
+        d = domain.strip().lower().lstrip(".")
+        if not is_valid_domain(d):
+            return False
         if "*" in d:
             self.wildcards.add(d)
         else:
             self.exacts.add(d)
         self.raw_count += 1
+        return True
 
-    def ingest_text(self, text: str) -> None:
-        """兼容 domain YAML / text list / classical YAML 三种上游格式提取域名"""
+    def ingest_text(self, text: str, source_name: str = "", strict: bool = False) -> None:
+        """兼容 domain YAML / text list / classical YAML / AdBlock ||domain^ 四种上游格式提取域名"""
         for raw in text.splitlines():
             line = clean_line(raw)
             if not line:
+                continue
+            if line.startswith("@@"):
+                if strict:
+                    raise ValueError(f"[{source_name}] domain 规则集不支持 @@ 例外语法: {raw!r}")
+                continue
+            if line.startswith("||") and line.endswith("^"):
+                dom = line[2:-1]
+                if "/" not in dom and "$" not in dom:
+                    if not self.add_suffix(dom) and strict:
+                        raise ValueError(f"[{source_name}] 非法 AdBlock 域名后缀: {raw!r}")
+                elif strict:
+                    raise ValueError(f"[{source_name}] 不支持的复杂 AdBlock 规则: {raw!r}")
                 continue
             if "," in line:
                 parts = [p.strip() for p in line.split(",")]
                 rtype = parts[0].upper()
                 val = parts[1] if len(parts) > 1 else ""
                 if rtype == "DOMAIN-SUFFIX":
-                    self.add_suffix(val)
-                elif rtype == "DOMAIN":
-                    self.add_exact(val)
-                elif rtype == "DOMAIN-WILDCARD":
-                    self.add_exact(val)
-                # 忽略 DOMAIN-KEYWORD / IP-CIDR 等非 domain rule-set 支持的类型
+                    if not self.add_suffix(val) and strict:
+                        raise ValueError(f"[{source_name}] 非法域名后缀: {raw!r}")
+                elif rtype in {"DOMAIN", "DOMAIN-WILDCARD"}:
+                    if not self.add_exact(val) and strict:
+                        raise ValueError(f"[{source_name}] 非法域名: {raw!r}")
+                elif strict:
+                    raise ValueError(f"[{source_name}] domain 规则集不支持类型 {rtype!r}: {raw!r}")
+                # 非严格模式下忽略 DOMAIN-KEYWORD / IP-CIDR 等非 domain rule-set 支持的类型
                 continue
 
             # 无逗号：处理 +.foo.com / .foo.com / *.foo.com / foo.com
             if line.startswith("+."):
-                self.add_suffix(line[2:])
+                if not self.add_suffix(line[2:]) and strict:
+                    raise ValueError(f"[{source_name}] 非法域名后缀: {raw!r}")
             elif line.startswith("."):
-                self.add_suffix(line[1:])
-            elif line.startswith("*.") and "*" not in line[2:]:
+                if not self.add_suffix(line[1:]) and strict:
+                    raise ValueError(f"[{source_name}] 非法域名后缀: {raw!r}")
+            elif line.startswith("*."):
                 # *.foo.com 仅匹配子域不匹配根域，保留通配写法
                 if is_valid_domain(line):
                     self.wildcards.add(line.lower())
                     self.raw_count += 1
+                elif strict:
+                    raise ValueError(f"[{source_name}] 非法通配域名: {raw!r}")
             else:
                 # 排除纯 IP / CIDR 行
                 try:
                     ipaddress.ip_network(line, strict=False)
+                    if strict:
+                        raise ValueError(f"[{source_name}] domain 规则集不能包含 IP 网段: {raw!r}")
                     continue
-                except ValueError:
-                    pass
-                self.add_exact(line)
+                except ValueError as exc:
+                    if strict and "domain 规则集不能包含 IP 网段" in str(exc):
+                        raise
+                if not self.add_exact(line) and strict:
+                    raise ValueError(f"[{source_name}] 非法域名: {raw!r}")
 
     @staticmethod
     def _has_parent_in(domain: str, suffix_pool: set[str], include_self: bool) -> bool:
@@ -221,7 +251,11 @@ class DomainSet:
             w
             for w in self.wildcards
             if w not in other.wildcards
-            and not (w.startswith("*.") and other.covers_suffix(w[2:]))
+            and not (
+                (w.startswith("*.") or w.startswith("+."))
+                and "*" not in w[2:]
+                and other.covers_suffix(w[2:])
+            )
         }
 
     def deduplicate(self) -> None:
@@ -236,7 +270,8 @@ class DomainSet:
             w
             for w in self.wildcards
             if not (
-                w.startswith("*.")
+                (w.startswith("*.") or w.startswith("+."))
+                and "*" not in w[2:]
                 and self._has_parent_in(w[2:], self.suffixes, include_self=True)
             )
         }
@@ -256,34 +291,66 @@ class DomainSet:
 # ---------------------------------------------------------------------------
 # 2. IP-CIDR 集合与「相邻/重叠子网聚合」引擎
 # ---------------------------------------------------------------------------
+def _exclude_networks(
+    nets: list, excludes: list
+) -> list:
+    if not nets or not excludes:
+        return nets
+    collapsed_ex = list(ipaddress.collapse_addresses(excludes))
+    current = list(ipaddress.collapse_addresses(nets))
+    for ex in collapsed_ex:
+        next_nets = []
+        for net in current:
+            if not net.overlaps(ex):
+                next_nets.append(net)
+            elif net.subnet_of(ex):
+                continue
+            else:
+                next_nets.extend(net.address_exclude(ex))
+        current = next_nets
+    return current
+
+
 @dataclass
 class IPCIDRSet:
     v4: list[ipaddress.IPv4Network] = field(default_factory=list)
     v6: list[ipaddress.IPv6Network] = field(default_factory=list)
     raw_count: int = 0
 
-    def add_cidr(self, token: str) -> None:
+    def add_cidr(self, token: str) -> bool:
         try:
             net = ipaddress.ip_network(token.strip(), strict=False)
         except ValueError:
-            return
+            return False
         if isinstance(net, ipaddress.IPv4Network):
             self.v4.append(net)
         else:
             self.v6.append(net)
         self.raw_count += 1
+        return True
 
-    def ingest_text(self, text: str) -> None:
+    def ingest_text(self, text: str, source_name: str = "", strict: bool = False) -> None:
         for raw in text.splitlines():
             line = clean_line(raw)
             if not line:
                 continue
             if "," in line:
                 parts = [p.strip() for p in line.split(",")]
-                if parts[0].upper() in {"IP-CIDR", "IP-CIDR6"} and len(parts) >= 2:
-                    self.add_cidr(parts[1])
+                rtype = parts[0].upper()
+                if rtype in {"IP-CIDR", "IP-CIDR6"} and len(parts) >= 2:
+                    if not self.add_cidr(parts[1]) and strict:
+                        raise ValueError(f"[{source_name}] 非法 CIDR 网段: {raw!r}")
+                elif strict:
+                    raise ValueError(f"[{source_name}] ipcidr 规则集不支持类型 {rtype!r}: {raw!r}")
             else:
-                self.add_cidr(line)
+                if not self.add_cidr(line) and strict:
+                    raise ValueError(f"[{source_name}] 非法 CIDR 网段: {raw!r}")
+
+    def subtract(self, other: "IPCIDRSet") -> None:
+        if other.v4:
+            self.v4 = _exclude_networks(self.v4, other.v4)
+        if other.v6:
+            self.v6 = _exclude_networks(self.v6, other.v6)
 
     def to_payload_list(self) -> list[str]:
         collapsed_v4 = list(ipaddress.collapse_addresses(self.v4))
@@ -310,10 +377,12 @@ class ClassicalSet:
             if "," not in line:
                 # 兼容混入的 domain / ipcidr 纯列表上游（如 MetaCubeX category-ai-!cn.yaml）
                 if line.startswith("+."):
-                    self.domains.add_suffix(line[2:])
+                    if not self.domains.add_suffix(line[2:]) and strict:
+                        raise ValueError(f"[{source_name}] 非法域名后缀: {raw!r}")
                     self.raw_count += 1
                 elif line.startswith("."):
-                    self.domains.add_suffix(line[1:])
+                    if not self.domains.add_suffix(line[1:]) and strict:
+                        raise ValueError(f"[{source_name}] 非法域名后缀: {raw!r}")
                     self.raw_count += 1
                 else:
                     try:
@@ -359,19 +428,27 @@ class ClassicalSet:
             parts = [p.strip() for p in rest.split(",")]
             target = parts[0]
             if not target:
+                if strict:
+                    raise ValueError(f"[{source_name}] 规则目标为空: {raw!r}")
                 continue
 
             if rtype == "DOMAIN-SUFFIX":
-                self.domains.add_suffix(target)
+                if not self.domains.add_suffix(target):
+                    if strict:
+                        raise ValueError(f"[{source_name}] 非法域名后缀: {raw!r}")
+                    continue
                 self.raw_count += 1
-            elif rtype == "DOMAIN":
-                self.domains.add_exact(target)
-                self.raw_count += 1
-            elif rtype == "DOMAIN-WILDCARD":
-                self.domains.add_exact(target)
+            elif rtype in {"DOMAIN", "DOMAIN-WILDCARD"}:
+                if not self.domains.add_exact(target):
+                    if strict:
+                        raise ValueError(f"[{source_name}] 非法域名: {raw!r}")
+                    continue
                 self.raw_count += 1
             elif rtype in {"IP-CIDR", "IP-CIDR6"}:
-                self.ips.add_cidr(target)
+                if not self.ips.add_cidr(target):
+                    if strict:
+                        raise ValueError(f"[{source_name}] 非法 CIDR 网段: {raw!r}")
+                    continue
                 self.raw_count += 1
             elif rtype in IP_RULE_TYPES:
                 # IP-ASN / GEOIP 等强制附带 no-resolve 避免前置规则触发本地 DNS 解析
@@ -384,6 +461,7 @@ class ClassicalSet:
 
     def subtract(self, other: "ClassicalSet") -> None:
         self.domains.subtract(other.domains)
+        self.ips.subtract(other.ips)
         other_set = set(other.other_rules)
         self.other_rules = [r for r in self.other_rules if r not in other_set]
 
@@ -455,6 +533,36 @@ def read_custom_classical(filename: str) -> ClassicalSet:
     return cset
 
 
+def toposort_section(
+    section_cfg: dict[str, dict], prebuilt_names: set[str]
+) -> list[tuple[str, dict]]:
+    """按 exclude_sets 依赖关系进行拓扑排序，杜绝字典顺序导致的防污染漏剔除"""
+    order: list[tuple[str, dict]] = []
+    state: dict[str, int] = {}  # 0=unvisited, 1=visiting, 2=done
+
+    def visit(name: str) -> None:
+        st = state.get(name, 0)
+        if st == 2:
+            return
+        if st == 1:
+            raise ValueError(f"sources.json 中存在循环 exclude_sets 依赖: {name}")
+        state[name] = 1
+        cfg = section_cfg[name]
+        for dep in cfg.get("exclude_sets", []):
+            if dep in section_cfg:
+                visit(dep)
+            elif dep not in prebuilt_names:
+                raise ValueError(
+                    f"[{name}] exclude_sets 引用了未定义或尚未构建的规则集: {dep!r}"
+                )
+        state[name] = 2
+        order.append((name, cfg))
+
+    for key in section_cfg:
+        visit(key)
+    return order
+
+
 # ---------------------------------------------------------------------------
 # 主构建流水线
 # ---------------------------------------------------------------------------
@@ -484,23 +592,28 @@ def main() -> int:
     proxy_cset.subtract(custom_exclude)
     proxy_cset.subtract(direct_cset)
 
-    # 2. 并发拉取 sources.json 中定义的所有上游文本
+    # 2. 并发拉取 sources.json 中定义的所有上游文本（含 exclude_upstreams，按 URL 去重）
     fetched_texts: dict[str, str] = {}
     if not args.dry_run:
-        all_upstreams: list[dict] = []
+        unique_upstreams: dict[str, dict] = {}
         for section in ("domain", "ipcidr", "classical"):
             for item_cfg in config.get(section, {}).values():
-                for up in item_cfg.get("upstreams", []):
-                    all_upstreams.append(up)
+                for key in ("upstreams", "exclude_upstreams"):
+                    for up in item_cfg.get(key, []):
+                        url = up["url"]
+                        if url not in unique_upstreams:
+                            unique_upstreams[url] = dict(up)
+                        elif up.get("required", False):
+                            unique_upstreams[url]["required"] = True
 
-        print(f"[INFO] 正在并发拉取 {len(all_upstreams)} 个公开上游规则源...")
+        print(f"[INFO] 正在并发拉取 {len(unique_upstreams)} 个公开上游规则源...")
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as pool:
             future_map = {}
-            for up in all_upstreams:
-                urls = [up["url"]]
+            for url, up in unique_upstreams.items():
+                urls = [url]
                 if up.get("fallback_url"):
                     urls.append(up["fallback_url"])
-                future_map[up["url"]] = (up, pool.submit(fetch_text, urls))
+                future_map[url] = (up, pool.submit(fetch_text, urls))
 
             for url, (up, fut) in future_map.items():
                 try:
@@ -512,75 +625,147 @@ def main() -> int:
                         return 1
                     print(f"  [WARN] 补充上游拉取失败（已自动跳过）{up['name']}: {exc}", file=sys.stderr)
 
-    # 3. 先构建 classical 规则集（direct / proxy / gemini / ai），以便后续给 cn 等做防污染剔除
+    # 3. 先构建 classical 规则集（direct / proxy / gemini / ai），以便后续给 domain 集合做防污染剔除
     classical_sets: dict[str, ClassicalSet] = {
         "direct": direct_cset,
         "proxy": proxy_cset,
     }
 
-    for name, item_cfg in config.get("classical", {}).items():
+    for name, item_cfg in toposort_section(
+        config.get("classical", {}), set(classical_sets.keys())
+    ):
         cset = ClassicalSet()
-        if item_cfg.get("custom_file"):
-            custom_part = read_custom_classical(item_cfg["custom_file"])
-            cset.ingest_text(
-                "\n".join(custom_part.to_payload_list()),
-                source_name=f"custom/{item_cfg['custom_file']}",
-            )
-            cset.raw_count = custom_part.raw_count
-
         for up in item_cfg.get("upstreams", []):
             txt = fetched_texts.get(up["url"], "")
             if txt:
                 cset.ingest_text(txt, source_name=up["name"], strict=False)
 
+        for ex_name in item_cfg.get("exclude_sets", []):
+            cset.subtract(classical_sets[ex_name])
+
+        if item_cfg.get("exclude_upstreams") or item_cfg.get("exclude_rules"):
+            local_ex = ClassicalSet()
+            for ex_up in item_cfg.get("exclude_upstreams", []):
+                txt = fetched_texts.get(ex_up["url"], "")
+                if txt:
+                    local_ex.ingest_text(txt, source_name=ex_up["name"], strict=False)
+            if item_cfg.get("exclude_rules"):
+                local_ex.ingest_text(
+                    "\n".join(item_cfg["exclude_rules"]),
+                    source_name=f"sources.json:{name}.exclude_rules",
+                    strict=True,
+                )
+            cset.subtract(local_ex)
+
+        # 个人 custom/ 规则优先级高于上游剔除表，仅受全局 exclude/direct/proxy 约束
+        if item_cfg.get("custom_file"):
+            custom_path = CUSTOM_DIR / item_cfg["custom_file"]
+            if custom_path.exists():
+                cset.ingest_text(
+                    custom_path.read_text(encoding="utf-8"),
+                    source_name=f"custom/{item_cfg['custom_file']}",
+                    strict=True,
+                )
+
         cset.subtract(custom_exclude)
         for ex_name in item_cfg.get("exclude_sets", []):
-            if ex_name in classical_sets:
+            if ex_name in ("direct", "proxy"):
                 cset.subtract(classical_sets[ex_name])
 
         classical_sets[name] = cset
 
-    # 4. 构建所有 domain 规则集（先处理非 cn 集，最后处理 cn 以便剔除 google/gemini/ai 污染域名）
+    # 4. 按拓扑顺序构建所有 domain 规则集（确保被依赖集合先于依赖它的集合构建）
     domain_sets: dict[str, DomainSet] = {}
-    domain_cfg_items = list(config.get("domain", {}).items())
-    # 确保被依赖的集合（如 google、private）先于 cn 和 non-cn 构建
-    domain_cfg_items.sort(key=lambda kv: 1 if kv[0] in {"non-cn", "cn"} else 0)
-
-    for name, item_cfg in domain_cfg_items:
+    for name, item_cfg in toposort_section(
+        config.get("domain", {}), set(classical_sets.keys())
+    ):
         dset = DomainSet()
-        if item_cfg.get("custom_file"):
-            custom_path = CUSTOM_DIR / item_cfg["custom_file"]
-            if custom_path.exists():
-                dset.ingest_text(custom_path.read_text(encoding="utf-8"))
-
         for up in item_cfg.get("upstreams", []):
             txt = fetched_texts.get(up["url"], "")
             if txt:
-                dset.ingest_text(txt)
+                dset.ingest_text(txt, source_name=up["name"], strict=False)
 
-        dset.subtract(custom_exclude.domains)
         for ex_name in item_cfg.get("exclude_sets", []):
             if ex_name in classical_sets:
                 dset.subtract(classical_sets[ex_name].domains)
             if ex_name in domain_sets:
                 dset.subtract(domain_sets[ex_name])
 
-        dset.deduplicate()
-        domain_sets[name] = dset
+        if item_cfg.get("exclude_upstreams") or item_cfg.get("exclude_rules"):
+            local_ex = DomainSet()
+            for ex_up in item_cfg.get("exclude_upstreams", []):
+                txt = fetched_texts.get(ex_up["url"], "")
+                if txt:
+                    local_ex.ingest_text(txt, source_name=ex_up["name"], strict=False)
+            if item_cfg.get("exclude_rules"):
+                local_ex.ingest_text(
+                    "\n".join(item_cfg["exclude_rules"]),
+                    source_name=f"sources.json:{name}.exclude_rules",
+                    strict=True,
+                )
+            dset.subtract(local_ex)
 
-    # 5. 构建所有 ipcidr 规则集（自动合并相邻/重叠子网）
-    ip_sets: dict[str, IPCIDRSet] = {}
-    for name, item_cfg in config.get("ipcidr", {}).items():
-        iset = IPCIDRSet()
         if item_cfg.get("custom_file"):
             custom_path = CUSTOM_DIR / item_cfg["custom_file"]
             if custom_path.exists():
-                iset.ingest_text(custom_path.read_text(encoding="utf-8"))
+                dset.ingest_text(
+                    custom_path.read_text(encoding="utf-8"),
+                    source_name=f"custom/{item_cfg['custom_file']}",
+                    strict=True,
+                )
 
+        dset.subtract(custom_exclude.domains)
+        for ex_name in item_cfg.get("exclude_sets", []):
+            if ex_name in ("direct", "proxy"):
+                dset.subtract(classical_sets[ex_name].domains)
+
+        dset.deduplicate()
+        domain_sets[name] = dset
+
+    # 5. 构建所有 ipcidr 规则集（自动合并相邻/重叠子网并支持剔除）
+    ip_sets: dict[str, IPCIDRSet] = {}
+    prebuilt_for_ip = set(classical_sets.keys()) | set(domain_sets.keys())
+    for name, item_cfg in toposort_section(config.get("ipcidr", {}), prebuilt_for_ip):
+        iset = IPCIDRSet()
         for up in item_cfg.get("upstreams", []):
             txt = fetched_texts.get(up["url"], "")
             if txt:
-                iset.ingest_text(txt)
+                iset.ingest_text(txt, source_name=up["name"], strict=False)
+
+        for ex_name in item_cfg.get("exclude_sets", []):
+            if ex_name in classical_sets:
+                iset.subtract(classical_sets[ex_name].ips)
+            if ex_name in ip_sets:
+                iset.subtract(ip_sets[ex_name])
+
+        if item_cfg.get("exclude_upstreams") or item_cfg.get("exclude_rules"):
+            local_ex = IPCIDRSet()
+            for ex_up in item_cfg.get("exclude_upstreams", []):
+                txt = fetched_texts.get(ex_up["url"], "")
+                if txt:
+                    local_ex.ingest_text(txt, source_name=ex_up["name"], strict=False)
+            if item_cfg.get("exclude_rules"):
+                local_ex.ingest_text(
+                    "\n".join(item_cfg["exclude_rules"]),
+                    source_name=f"sources.json:{name}.exclude_rules",
+                    strict=True,
+                )
+            iset.subtract(local_ex)
+
+        if item_cfg.get("custom_file"):
+            custom_path = CUSTOM_DIR / item_cfg["custom_file"]
+            if custom_path.exists():
+                iset.ingest_text(
+                    custom_path.read_text(encoding="utf-8"),
+                    source_name=f"custom/{item_cfg['custom_file']}",
+                    strict=True,
+                )
+
+        iset.subtract(custom_exclude.ips)
+        for ex_name in item_cfg.get("exclude_sets", []):
+            if ex_name in ("direct", "proxy"):
+                iset.subtract(classical_sets[ex_name].ips)
+
         ip_sets[name] = iset
 
     # 6. 输出全部 YAML 文件，并在有 mihomo 内核时编译 .mrs 二进制文件
@@ -661,8 +846,8 @@ def main() -> int:
         "# Mihomo 多源去重规则集 (Auto-Generated Release Branch)",
         "",
         f"- **最近自动构建时间**: `{now_str}`",
-        "- **上游数据源**: `MetaCubeX/meta-rules-dat` + `Loyalsoldier/clash-rules` + `VPSDance/ai-proxy-rules` + `TG-Twilight/AWAvenue-Ads-Rule` + `anti-AD` + `gaoyifan/china-operator-ip` + `Hackl0us/GeoIP2-CN` + `blackmatrix7/ios_rule_script` + `custom/` 个人规则",
-        "- **去重算法**: 父子域名后缀树剪枝（`+.example.com` 自动剔除多余子域名）+ IPv4/IPv6 相邻与重叠 CIDR 子网合并 + 跨集合防污染剥离",
+        "- **上游数据源**: `MetaCubeX/meta-rules-dat` + `Loyalsoldier/clash-rules` + `VPSDance/ai-proxy-rules` + `TG-Twilight/AWAvenue-Ads-Rule` + `Cats-Team/AdRules` + `hagezi/dns-blocklists` + `anti-AD` (`dead-horse` 白名单) + `Aethersailor` + `DustinWin` + `SukkaW` + `gaoyifan/china-operator-ip` + `Hackl0us/GeoIP2-CN` + `blackmatrix7` + `uselibrary/PCDN` + `custom/` 个人规则",
+        "- **去重算法**: 父子域名后缀树剪枝（`+.example.com` 自动剔除多余子域名，原生兼容 AdBlock `||domain^` 与多级通配符）+ IPv4/IPv6 相邻与重叠 CIDR 子网合并 + 拓扑依赖跨集合防污染剥离",
         "",
         "## 构建统计明细",
         "",

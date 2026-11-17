@@ -1,0 +1,19 @@
+# 个人补充 Fake-IP Filter 规则（合并进 rules/fakeip-filter.mrs -> 强制返回真实 IP 不分配 Fake-IP）
+# 上游已自动同步 MetaCubeX/category-stun + DustinWin/fakeip-filter + SukkaW/clash_fake_ip_filter
+payload:
+  - '+.stun.*.*'
+  - '+.stun.*.*.*'
+  - '+.stun.*.*.*.*'
+  - '+.msftconnecttest.com'
+  - '+.msftncsi.com'
+  - localhost.ptlogin2.qq.com
+  - '+.srv.nintendo.net'
+  - '+.stun.playstation.net'
+  - 'xbox.*.microsoft.com'
+  - '+.xboxlive.com'
+  - yacd.haishan.me
+  - yacd.metacubex.one
+  - d.metacubex.one
+  - clash.razord.top
+  - metacubex.github.io
+  - '+.zash.run.place'

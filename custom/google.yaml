@@ -2,3 +2,4 @@
 # 上游已自动同步 Google AI / Gemini / AI Studio / NotebookLM / Antigravity
 payload:
   - DOMAIN,storage.googleapis.com
+  - DOMAIN-SUFFIX,firebase.studio

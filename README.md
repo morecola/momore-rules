@@ -1,23 +1,26 @@
 # Mihomo 多源分流规则自动聚合与去重仓库
 
-参考 [`Loyalsoldier/clash-rules`](https://github.com/Loyalsoldier/clash-rules) 与 [`VPSDance/ai-proxy-rules`](https://github.com/VPSDance/ai-proxy-rules) 架构设计，**仅针对你实际在用的 17 个规则集**，每天自动从四大主流公开规则源并发拉取、跨格式归一化、父子域名树去重、IP 子网合并，并调用官方 Mihomo 内核编译出二进制 `.mrs` 规则集发布到独立的 `release` 分支。
+参考 [`Loyalsoldier/clash-rules`](https://github.com/Loyalsoldier/clash-rules) 与 [`VPSDance/ai-proxy-rules`](https://github.com/VPSDance/ai-proxy-rules) 架构设计，**针对实际在用的 25 个核心规则集**，每天自动从主流公开规则源并发拉取、跨格式归一化、父子域名树去重、IP 子网合并，并调用官方 Mihomo 内核编译出二进制 `.mrs` 规则集发布到独立的 `release` 分支。
 
 ---
 
 ## 核心特性
 
-1. **八大公开上游交叉互补（定义在 `sources.json`）**
-   - **AdBlock 去广告**：`TG-Twilight/AWAvenue-Ads-Rule`（秋风广告规则，低误杀开屏/摇一摇拦截）+ `privacy-protection-tools/anti-AD` + `Loyalsoldier/reject` + `MetaCubeX/category-ads-all` + `blackmatrix7/AdvertisingLite`
+1. **多公开上游交叉互补（定义在 `sources.json`）**
+   - **AdBlock 与防绕过拦截**：
+     - 去广告/防追踪/防 PCDN：`TG-Twilight/AWAvenue-Ads-Rule`（秋风广告规则）+ `Cats-Team/AdRules` + `hagezi/dns-blocklists (pro.mini)` + `privacy-protection-tools/anti-AD`（叠加 `dead-horse` 官方白名单并放行 `sentry.io`）+ `uselibrary/PCDN` + `SukkaW/sogouinput` + `Loyalsoldier/reject` + `MetaCubeX/category-ads-all`
+     - HTTPDNS / 加密 DNS 防绕过：`MetaCubeX/category-httpdns-cn` + `blackmatrix7/BlockHttpDNS`（含专用 HTTPDNS IP 段）+ `Aethersailor/Encrypted_DNS`，彻底杜绝国内 App 硬编码 HTTPDNS 绕过 Fake-IP 与复活广告
+   - **Fake-IP 豁免（`fakeip-filter`）**：`MetaCubeX/category-stun` + `DustinWin/fakeip-filter` + `SukkaW/clash_fake_ip_filter` + 多级 STUN 通配符与本地面板（`yacd` / `metacubexd` / `zashboard`）
    - **CN IP 大陆网段**：`gaoyifan/china-operator-ip`（每日实测电信/联通/移动/教育网 BGP 路由 IPv4 & IPv6）+ `Hackl0us/GeoIP2-CN`（`17mon/ipip.net` + 纯真 IP）+ `Loyalsoldier/cncidr` + `MetaCubeX/geoip-cn`
-   - **CN Site 大陆域名**：`MetaCubeX/cn`（`v2fly` + `dnsmasq-china-list`）+ `Loyalsoldier/direct` + `blackmatrix7/China_Domain`
-   - **AI 与分流专项**：`VPSDance/ai-proxy-rules`（海外 AI + Google AI）+ `blackmatrix7/ios_rule_script`（OpenAI / Claude / Copilot / Gemini / 学术 / 开发者）
-2. **三重深度去重与防污染算法（`scripts/sync.py`）**
-   - **父子域名后缀树剪枝**：例如同时存在 `+.google.com`、`+.mail.google.com`、`www.google.com` 时，自动剪枝多余子域名，仅保留根后缀 `+.google.com`。
-   - **相邻与重叠 CIDR 子网聚合**：使用标准库 `ipaddress.collapse_addresses` 自动将 6 个国内 IP 源里重叠或相邻的 IPv4 / IPv6 网段合并为最少条数，并对 `classical` 规则中的 IP 自动强制补齐 `,no-resolve`。
-   - **跨集合防污染剥离**：
-     - 自动将 `gemini`（Google AI）从 `ai` 中剥离，确保 Gemini 与 Google 账号同走 `🔍 谷歌服务`，而 Codex / Claude / Cursor 等走 `🤖 AI 服务`。
-     - 自动从大陆直连域名 `cn.mrs` 中剔除 `google`、`gemini`、`ai`、`dev`、`scholar` 及个人代理域名，彻底杜绝上游直连表混入海外 CDN 域名导致的国内 DNS 泄漏。
-     - 自动从去广告 `category-ads-all.mrs` 中剔除 `direct`、`proxy` 与 `exclude` 中的域名，防止广告规则误杀正常业务。
+   - **CN Site、大厂 CDN、BT/PT 与游戏满速直连**：`MetaCubeX/cn` + `Loyalsoldier/direct` + `blackmatrix7/China_Domain`；独立拆分 `apple-cn`、`microsoft-cn`、`pt-tracker`（公共/私有 Tracker 直连防机场封号）与 `games-cn`（`Aethersailor/Game_Download_CDN` + `Steam_CDN` + `steam@cn` + `category-games@cn`）
+   - **AI、Telegram 与分流专项**：`VPSDance/ai-proxy-rules` + `MetaCubeX/category-ai-!cn` + `MetaCubeX/apple-intelligence`；`Telegram` 域名 + 数据中心裸 IP 段（`MetaCubeX` + `Loyalsoldier` + `SukkaW`）双层覆盖
+2. **三重深度去重与拓扑防污染算法（`scripts/sync.py`）**
+   - **父子域名后缀树剪枝**：自动兼容 YAML / 纯文本 / Classical / AdBlock `||domain^` 四种格式及多级通配符（`+.stun.*.*`）；当存在 `+.google.com` 时自动剪枝多余子域名。
+   - **相邻与重叠 CIDR 子网聚合**：使用标准库 `ipaddress.collapse_addresses` 自动合并重叠或相邻的 IPv4 / IPv6 网段，支持跨集合子网差集剔除，并对 `classical` 规则中的 IP 自动强制补齐 `,no-resolve`。
+   - **拓扑依赖防污染剥离（支持 `exclude_sets` / `exclude_upstreams` / `exclude_rules`）**：
+     - 自动将 `gemini`（Google AI）从 `ai` 中剥离，并从 `category-ads-all` 与 `httpdns` 中保护 `ai`、`gemini`、`pt-tracker` 关键业务域名不被上游规则误伤。
+     - 自动从大陆直连域名 `cn.mrs` 中剔除 `google`、`gemini`、`ai`、`dev`、`scholar`、`telegram`、`httpdns`、`non-cn` 及个人代理域名，彻底杜绝国内 DNS 泄漏。
+     - 自动从 `scholar` / `dev` 中剥离国内学术库（知网/万方/维普/北大法宝）与国内开发镜像。
 3. **官方内核原生编译 `.mrs` + 孤儿分支零体积膨胀**
    - GitHub Actions 每次构建时自动拉取最新官方 `mihomo` 二进制，执行 `mihomo convert-ruleset` 同时生成 `.mrs`（极致加载速度与低内存占用）与可读的 `.yaml`。
    - 构建产物强制覆盖推送到无历史记录的 `release` 孤儿分支，`main` 分支永远只有几十 KB，跑上十年仓库也不会膨胀。
@@ -29,18 +32,19 @@
 ```text
 .
 ├── .github/workflows/sync.yml  # GitHub Actions 每日定时 + Push 自动构建流水线
-├── sources.json                # 【多源配置】17 个规则集对应的多上游地址与防污染剔除关系
+├── sources.json                # 【多源配置】25 个规则集对应的多上游地址与防污染剔除关系
 ├── custom/                     # 【日常维护】个人自定义最高优先级规则
 │   ├── direct.yaml             # 个人直连规则（已内置 no.al、letcola.eu.org）
 │   ├── proxy.yaml              # 个人代理补充规则
 │   ├── adblock.yaml            # 个人去广告补充域名（编译进 category-ads-all.mrs）
+│   ├── fakeip-filter.yaml      # 个人 Fake-IP 豁免补充（含多级 STUN 通配与本地 Web 面板）
 │   ├── cn.yaml                 # 个人国内直连域名补充（编译进 cn.mrs）
 │   ├── cnip.yaml               # 个人国内 IP 网段补充（聚合编译进 cnip.mrs）
 │   ├── ai.yaml                 # 个人 AI 补充规则（归入 🤖 AI 服务）
 │   ├── google.yaml             # 个人 Google/Gemini 补充规则（归入 🔍 谷歌服务）
 │   └── exclude.yaml            # 全局误杀剔除白名单（从广告及所有规则集中强制移除）
 ├── scripts/sync.py             # 多源并发拉取、域名树剪枝、CIDR 合并与 .mrs 编译脚本
-└── mihomo-config.yaml          # 配套精简版 Mihomo 配置模板（极速防泄漏 DNS + 10 个核心策略组）
+└── mihomo-config.yaml          # 配套精简版 Mihomo 配置模板（极速防泄漏 DNS + 11 个核心策略组）
 ```
 
 ---
@@ -70,7 +74,7 @@ git push -u origin main
 2. 推送后会立即运行 `Sync & Build Mihomo Rules`（若网页拖拽未触发，点击左侧 `Sync & Build Mihomo Rules` -> 右侧 **Run workflow** 手动运行一次）。
 3. 等待约 25~40 秒变成绿勾 ✅ 后，切换到仓库的 **`release` 分支**：
    - `release` 分支首页会自动生成一张**构建统计表**（展示每个规则集合并前总条数、去重剪枝条数与编译后 `.mrs` 体积）。
-   - `rules/` 目录下已生成全部 17 个规则集文件（13 个 `.mrs` + 对应的 `.yaml`）。
+   - `rules/` 目录下已生成全部 25 个规则集文件（21 个 `.mrs` + 对应的 `.yaml`）。
 
 ### 第 4 步：填入节点并导入 `mihomo-config.yaml`
 `mihomo-config.yaml` 已预绑定至 `morecola/momore-rules` 的 `release` 分支，只需填入你的节点或 `proxy-providers` 即可直接使用：

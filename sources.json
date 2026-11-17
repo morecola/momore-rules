@@ -1,9 +1,20 @@
 {
   "domain": {
     "category-ads-all": {
-      "description": "AdBlock 广告与追踪拦截域名（融合秋风广告规则 + anti-AD + MetaCubeX + Loyalsoldier）",
+      "description": "AdBlock 广告/追踪/恶意域名/PCDN/流氓遥测拦截（融合秋风 + AdRules + HaGeZi + anti-AD + PCDN，叠加 dead-horse 白名单）",
       "custom_file": "adblock.yaml",
-      "exclude_sets": ["direct", "proxy"],
+      "exclude_sets": ["direct", "proxy", "ai", "gemini", "pt-tracker"],
+      "exclude_upstreams": [
+        {
+          "name": "privacy-protection-tools/dead-horse (anti-AD 白名单)",
+          "url": "https://raw.githubusercontent.com/privacy-protection-tools/dead-horse/master/anti-ad-white-for-clash.yaml",
+          "required": false
+        }
+      ],
+      "exclude_rules": [
+        "DOMAIN-SUFFIX,sentry.io",
+        "DOMAIN-SUFFIX,skk.moe"
+      ],
       "upstreams": [
         {
           "name": "MetaCubeX/category-ads-all",
@@ -14,6 +25,17 @@
           "name": "TG-Twilight/AWAvenue-Ads-Rule (秋风广告规则)",
           "url": "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Clash-Classical.yaml",
           "fallback_url": "https://cdn.jsdelivr.net/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash-Classical.yaml",
+          "required": false
+        },
+        {
+          "name": "Cats-Team/AdRules",
+          "url": "https://raw.githubusercontent.com/Cats-Team/AdRules/main/adrules_domainset.txt",
+          "fallback_url": "https://cdn.jsdelivr.net/gh/Cats-Team/AdRules@main/adrules_domainset.txt",
+          "required": false
+        },
+        {
+          "name": "hagezi/dns-blocklists (pro.mini)",
+          "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.mini.txt",
           "required": false
         },
         {
@@ -29,6 +51,61 @@
         {
           "name": "blackmatrix7/AdvertisingLite",
           "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/AdvertisingLite/AdvertisingLite_Domain.yaml",
+          "required": false
+        },
+        {
+          "name": "uselibrary/PCDN",
+          "url": "https://raw.githubusercontent.com/uselibrary/PCDN/main/pcdn.list",
+          "required": false
+        },
+        {
+          "name": "SukkaW/sogouinput",
+          "url": "https://ruleset.skk.moe/Clash/non_ip/sogouinput.txt",
+          "required": false
+        }
+      ]
+    },
+    "httpdns": {
+      "description": "HTTPDNS 与客户端加密 DNS 绕过拦截（防止国内 App 硬编码 HTTPDNS 绕过 Fake-IP 与复活广告）",
+      "exclude_sets": ["direct", "proxy", "ai", "gemini"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/category-httpdns-cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-httpdns-cn.yaml",
+          "required": true
+        },
+        {
+          "name": "blackmatrix7/BlockHttpDNS",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/BlockHttpDNS/BlockHttpDNS.yaml",
+          "required": false
+        },
+        {
+          "name": "Aethersailor/Encrypted_DNS",
+          "url": "https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Encrypted_DNS_Domain.yaml",
+          "required": false
+        }
+      ]
+    },
+    "fakeip-filter": {
+      "description": "Fake-IP 豁免真实解析域名（STUN 联机 / 国内网游语音 / 银行音乐校验 / DDNS / 本地控制面板）",
+      "custom_file": "fakeip-filter.yaml",
+      "exclude_rules": [
+        "DOMAIN-SUFFIX,skk.moe"
+      ],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/category-stun",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-stun.yaml",
+          "required": true
+        },
+        {
+          "name": "DustinWin/fakeip-filter",
+          "url": "https://raw.githubusercontent.com/DustinWin/ruleset_geodata/mihomo-ruleset/fakeip-filter.list",
+          "required": false
+        },
+        {
+          "name": "SukkaW/clash_fake_ip_filter",
+          "url": "https://ruleset.skk.moe/Clash/domainset/clash_fake_ip_filter.txt",
           "required": false
         }
       ]
@@ -63,6 +140,58 @@
         }
       ]
     },
+    "pt-tracker": {
+      "description": "BT / PT Tracker 与私有种子站直连域名（防代理封号与免 Fake-IP）",
+      "exclude_sets": ["proxy"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/category-public-tracker",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-public-tracker.yaml",
+          "required": true
+        },
+        {
+          "name": "MetaCubeX/category-pt",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-pt.yaml",
+          "required": false
+        },
+        {
+          "name": "DustinWin/trackerslist",
+          "url": "https://raw.githubusercontent.com/DustinWin/ruleset_geodata/mihomo-ruleset/trackerslist.list",
+          "required": false
+        }
+      ]
+    },
+    "games-cn": {
+      "description": "中国大陆游戏与国际平台国内下载 CDN 直连域名（Steam / Epic / PSN / Xbox / 暴雪满速下载）",
+      "exclude_sets": ["proxy"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/category-games@cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-games@cn.yaml",
+          "required": true
+        },
+        {
+          "name": "MetaCubeX/steam@cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/steam@cn.yaml",
+          "required": true
+        },
+        {
+          "name": "Aethersailor/Game_Download_CDN",
+          "url": "https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Game_Download_CDN_Domain.yaml",
+          "required": false
+        },
+        {
+          "name": "Aethersailor/Steam_CDN",
+          "url": "https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Steam_CDN_Domain.yaml",
+          "required": false
+        },
+        {
+          "name": "DustinWin/games-cn",
+          "url": "https://raw.githubusercontent.com/DustinWin/ruleset_geodata/mihomo-ruleset/games-cn.list",
+          "required": false
+        }
+      ]
+    },
     "apple-cn": {
       "description": "Apple 中国大陆直连域名",
       "upstreams": [
@@ -74,6 +203,32 @@
         {
           "name": "Loyalsoldier/apple-cn",
           "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/apple.txt",
+          "required": false
+        }
+      ]
+    },
+    "microsoft-cn": {
+      "description": "Microsoft 中国大陆直连与更新 CDN 域名",
+      "upstreams": [
+        {
+          "name": "MetaCubeX/microsoft@cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft@cn.yaml",
+          "required": true
+        }
+      ]
+    },
+    "telegram": {
+      "description": "Telegram 域名集",
+      "exclude_sets": ["direct"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/telegram",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.yaml",
+          "required": true
+        },
+        {
+          "name": "blackmatrix7/Telegram",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Telegram/Telegram.yaml",
           "required": false
         }
       ]
@@ -96,7 +251,17 @@
     },
     "dev": {
       "description": "开发者与代码托管服务域名",
-      "exclude_sets": ["direct"],
+      "exclude_sets": ["direct", "apple", "apple-cn", "microsoft-cn", "ai"],
+      "exclude_upstreams": [
+        {
+          "name": "MetaCubeX/category-dev@cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-dev@cn.yaml",
+          "required": false
+        }
+      ],
+      "exclude_rules": [
+        "DOMAIN-SUFFIX,reddit.com"
+      ],
       "upstreams": [
         {
           "name": "MetaCubeX/category-dev",
@@ -118,6 +283,17 @@
     "scholar": {
       "description": "海外学术与期刊数据库域名",
       "exclude_sets": ["direct"],
+      "exclude_upstreams": [
+        {
+          "name": "MetaCubeX/category-scholar-cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-scholar-cn.yaml",
+          "required": false
+        }
+      ],
+      "exclude_rules": [
+        "DOMAIN-SUFFIX,wanfangdata.com",
+        "DOMAIN-SUFFIX,westlawchina.com"
+      ],
       "upstreams": [
         {
           "name": "MetaCubeX/category-scholar-!cn",
@@ -170,7 +346,7 @@
     },
     "non-cn": {
       "description": "非中国大陆代理域名汇总",
-      "exclude_sets": ["direct", "private"],
+      "exclude_sets": ["direct", "private", "apple-cn", "microsoft-cn", "pt-tracker", "games-cn"],
       "upstreams": [
         {
           "name": "MetaCubeX/geolocation-!cn",
@@ -186,18 +362,13 @@
           "name": "Loyalsoldier/gfw",
           "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/gfw.txt",
           "required": false
-        },
-        {
-          "name": "Loyalsoldier/tld-not-cn",
-          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/tld-not-cn.txt",
-          "required": false
         }
       ]
     },
     "cn": {
       "description": "CN Site 中国大陆域名集（融合 MetaCubeX + Loyalsoldier + blackmatrix7，自动剥离海外服务防 DNS 泄漏）",
       "custom_file": "cn.yaml",
-      "exclude_sets": ["proxy", "google", "gemini", "ai", "dev", "scholar"],
+      "exclude_sets": ["proxy", "google", "gemini", "ai", "dev", "scholar", "telegram", "httpdns", "non-cn"],
       "upstreams": [
         {
           "name": "MetaCubeX/cn (v2fly + dnsmasq-china-list)",
@@ -233,9 +404,42 @@
         }
       ]
     },
+    "httpdns-ip": {
+      "description": "国内大厂硬编码 HTTPDNS 专用 IP 段拦截（防绕过 Fake-IP 直连 IP 查询）",
+      "exclude_sets": ["direct", "proxy", "lanip"],
+      "upstreams": [
+        {
+          "name": "blackmatrix7/BlockHttpDNS (IP)",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/BlockHttpDNS/BlockHttpDNS.yaml",
+          "required": true
+        }
+      ]
+    },
+    "telegramip": {
+      "description": "Telegram 数据中心 IP 段（覆盖客户端不走域名的裸 IP 直连）",
+      "exclude_sets": ["direct", "lanip"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/geoip-telegram",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.yaml",
+          "required": true
+        },
+        {
+          "name": "Loyalsoldier/telegramcidr",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/telegramcidr.txt",
+          "required": false
+        },
+        {
+          "name": "SukkaW/telegram-ip",
+          "url": "https://ruleset.skk.moe/Clash/ip/telegram.txt",
+          "required": false
+        }
+      ]
+    },
     "cnip": {
       "description": "CN IP 中国大陆网段集（融合 BGP 运营商路由 + ipip.net + APNIC + MaxMind 并自动聚合子网）",
       "custom_file": "cnip.yaml",
+      "exclude_sets": ["proxy", "telegramip"],
       "upstreams": [
         {
           "name": "MetaCubeX/geoip-cn",
@@ -290,9 +494,21 @@
       ]
     },
     "ai": {
-      "description": "海外 AI 聚合（OpenAI / Codex / Claude / Cursor / Grok 等，自动剥离 Gemini）",
+      "description": "海外 AI 聚合（OpenAI / Codex / Claude / Cursor / Grok / Apple Intelligence 等，自动剥离 Gemini）",
       "custom_file": "ai.yaml",
       "exclude_sets": ["direct", "gemini"],
+      "exclude_rules": [
+        "DOMAIN-KEYWORD,datadog",
+        "DOMAIN-SUFFIX,datadoghq.com",
+        "DOMAIN,browser-intake-datadoghq.com",
+        "DOMAIN,browser-intake-us5-datadoghq.com",
+        "DOMAIN-KEYWORD,sentry",
+        "DOMAIN-SUFFIX,sentry.io",
+        "DOMAIN-KEYWORD,sift",
+        "DOMAIN-SUFFIX,algolia.net",
+        "DOMAIN,api.cloudflare.com",
+        "DOMAIN,static.cloudflareinsights.com"
+      ],
       "upstreams": [
         {
           "name": "VPSDance/global-ai",
@@ -306,18 +522,8 @@
           "required": false
         },
         {
-          "name": "blackmatrix7/OpenAI",
-          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml",
-          "required": false
-        },
-        {
-          "name": "blackmatrix7/Claude",
-          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Claude/Claude.yaml",
-          "required": false
-        },
-        {
-          "name": "blackmatrix7/Copilot",
-          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Copilot/Copilot.yaml",
+          "name": "MetaCubeX/apple-intelligence",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-intelligence.yaml",
           "required": false
         }
       ]
