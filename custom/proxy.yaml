@@ -1,0 +1,6 @@
+# 个人代理规则（最高优先级 -> 🚀 手动选择）
+# 遇到没在公共规则集里的小众被墙网站，直接加在下面即可
+# 示例：
+#   - DOMAIN-SUFFIX,example.com
+#   - DOMAIN-KEYWORD,example
+payload: []

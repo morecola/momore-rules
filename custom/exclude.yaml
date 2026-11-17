@@ -1,0 +1,4 @@
+# 全局剔除黑名单（如果上游某条 AI 规则误伤了你想直连或走别的分组的域名，写在这里会自动从生成的 YAML 规则中剔除）
+# 示例：
+#   - DOMAIN-SUFFIX,example.com
+payload: []

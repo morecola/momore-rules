@@ -1,0 +1,5 @@
+# 个人补充 AI 规则（合并进 rules/ai.yaml -> 🤖 AI 服务）
+# 上游已自动同步 OpenAI / Codex / Claude / Cursor / Grok / Perplexity 等
+# 如有自建中转 API 或新出的 AI 工具域名，加在下面即可：
+#   - DOMAIN-SUFFIX,my-ai-api.com
+payload: []

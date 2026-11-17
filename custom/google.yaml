@@ -1,0 +1,4 @@
+# 个人补充 Google / Gemini 规则（合并进 rules/gemini.yaml -> 🔍 谷歌服务）
+# 上游已自动同步 Google AI / Gemini / AI Studio / NotebookLM / Antigravity
+payload:
+  - DOMAIN,storage.googleapis.com

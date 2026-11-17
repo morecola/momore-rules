@@ -1,0 +1,326 @@
+{
+  "domain": {
+    "category-ads-all": {
+      "description": "AdBlock 广告与追踪拦截域名（融合秋风广告规则 + anti-AD + MetaCubeX + Loyalsoldier）",
+      "custom_file": "adblock.yaml",
+      "exclude_sets": ["direct", "proxy"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/category-ads-all",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ads-all.yaml",
+          "required": true
+        },
+        {
+          "name": "TG-Twilight/AWAvenue-Ads-Rule (秋风广告规则)",
+          "url": "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Clash-Classical.yaml",
+          "fallback_url": "https://cdn.jsdelivr.net/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash-Classical.yaml",
+          "required": false
+        },
+        {
+          "name": "privacy-protection-tools/anti-AD",
+          "url": "https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/anti-ad-clash.yaml",
+          "required": false
+        },
+        {
+          "name": "Loyalsoldier/reject",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt",
+          "required": false
+        },
+        {
+          "name": "blackmatrix7/AdvertisingLite",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/AdvertisingLite/AdvertisingLite_Domain.yaml",
+          "required": false
+        }
+      ]
+    },
+    "private": {
+      "description": "私有网络与局域网域名",
+      "upstreams": [
+        {
+          "name": "MetaCubeX/private",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.yaml",
+          "required": true
+        },
+        {
+          "name": "Loyalsoldier/private",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/private.txt",
+          "required": false
+        }
+      ]
+    },
+    "category-ntp": {
+      "description": "NTP 时间同步服务域名",
+      "upstreams": [
+        {
+          "name": "MetaCubeX/category-ntp",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ntp.yaml",
+          "required": true
+        },
+        {
+          "name": "blackmatrix7/NTPService",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/NTPService/NTPService.yaml",
+          "required": false
+        }
+      ]
+    },
+    "apple-cn": {
+      "description": "Apple 中国大陆直连域名",
+      "upstreams": [
+        {
+          "name": "MetaCubeX/apple@cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple@cn.yaml",
+          "required": true
+        },
+        {
+          "name": "Loyalsoldier/apple-cn",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/apple.txt",
+          "required": false
+        }
+      ]
+    },
+    "google": {
+      "description": "Google 全球服务域名",
+      "exclude_sets": ["direct"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/google",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.yaml",
+          "required": true
+        },
+        {
+          "name": "blackmatrix7/Google",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Google/Google.yaml",
+          "required": false
+        }
+      ]
+    },
+    "dev": {
+      "description": "开发者与代码托管服务域名",
+      "exclude_sets": ["direct"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/category-dev",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-dev.yaml",
+          "required": true
+        },
+        {
+          "name": "blackmatrix7/Developer",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Developer/Developer.yaml",
+          "required": false
+        },
+        {
+          "name": "blackmatrix7/GitHub",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/GitHub/GitHub.yaml",
+          "required": false
+        }
+      ]
+    },
+    "scholar": {
+      "description": "海外学术与期刊数据库域名",
+      "exclude_sets": ["direct"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/category-scholar-!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-scholar-!cn.yaml",
+          "required": true
+        },
+        {
+          "name": "blackmatrix7/Scholar",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Scholar/Scholar.yaml",
+          "required": false
+        }
+      ]
+    },
+    "apple": {
+      "description": "Apple 全球服务域名",
+      "exclude_sets": ["direct"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/apple",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple.yaml",
+          "required": true
+        },
+        {
+          "name": "Loyalsoldier/icloud",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/icloud.txt",
+          "required": false
+        },
+        {
+          "name": "blackmatrix7/Apple",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Apple/Apple.yaml",
+          "required": false
+        }
+      ]
+    },
+    "microsoft": {
+      "description": "Microsoft 服务域名",
+      "exclude_sets": ["direct"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/microsoft",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.yaml",
+          "required": true
+        },
+        {
+          "name": "blackmatrix7/Microsoft",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Microsoft/Microsoft.yaml",
+          "required": false
+        }
+      ]
+    },
+    "non-cn": {
+      "description": "非中国大陆代理域名汇总",
+      "exclude_sets": ["direct", "private"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/geolocation-!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.yaml",
+          "required": true
+        },
+        {
+          "name": "Loyalsoldier/proxy",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt",
+          "required": false
+        },
+        {
+          "name": "Loyalsoldier/gfw",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/gfw.txt",
+          "required": false
+        },
+        {
+          "name": "Loyalsoldier/tld-not-cn",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/tld-not-cn.txt",
+          "required": false
+        }
+      ]
+    },
+    "cn": {
+      "description": "CN Site 中国大陆域名集（融合 MetaCubeX + Loyalsoldier + blackmatrix7，自动剥离海外服务防 DNS 泄漏）",
+      "custom_file": "cn.yaml",
+      "exclude_sets": ["proxy", "google", "gemini", "ai", "dev", "scholar"],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/cn (v2fly + dnsmasq-china-list)",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.yaml",
+          "required": true
+        },
+        {
+          "name": "Loyalsoldier/direct",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt",
+          "required": false
+        },
+        {
+          "name": "blackmatrix7/China_Domain",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/China/China_Domain.yaml",
+          "required": false
+        }
+      ]
+    }
+  },
+  "ipcidr": {
+    "lanip": {
+      "description": "私有与局域网 IP 段（自动合并相邻/重叠子网）",
+      "upstreams": [
+        {
+          "name": "MetaCubeX/geoip-private",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/private.yaml",
+          "required": true
+        },
+        {
+          "name": "Loyalsoldier/lancidr",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/lancidr.txt",
+          "required": false
+        }
+      ]
+    },
+    "cnip": {
+      "description": "CN IP 中国大陆网段集（融合 BGP 运营商路由 + ipip.net + APNIC + MaxMind 并自动聚合子网）",
+      "custom_file": "cnip.yaml",
+      "upstreams": [
+        {
+          "name": "MetaCubeX/geoip-cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.yaml",
+          "required": true
+        },
+        {
+          "name": "gaoyifan/china-operator-ip (BGP IPv4)",
+          "url": "https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china.txt",
+          "required": false
+        },
+        {
+          "name": "gaoyifan/china-operator-ip (BGP IPv6)",
+          "url": "https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china6.txt",
+          "required": false
+        },
+        {
+          "name": "Hackl0us/GeoIP2-CN (17mon + 纯真 IP)",
+          "url": "https://raw.githubusercontent.com/Hackl0us/GeoIP2-CN/release/CN-ip-cidr.txt",
+          "required": false
+        },
+        {
+          "name": "Loyalsoldier/cncidr",
+          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/cncidr.txt",
+          "required": false
+        },
+        {
+          "name": "blackmatrix7/ChinaIPs",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/ChinaIPs/ChinaIPs_IP.yaml",
+          "required": false
+        }
+      ]
+    }
+  },
+  "classical": {
+    "gemini": {
+      "description": "Google AI / Gemini / AI Studio / NotebookLM（合并至谷歌服务）",
+      "custom_file": "google.yaml",
+      "exclude_sets": ["direct"],
+      "upstreams": [
+        {
+          "name": "VPSDance/google-ai",
+          "url": "https://raw.githubusercontent.com/VPSDance/ai-proxy-rules/main/rules/clash/google-ai.yaml",
+          "fallback_url": "https://cdn.jsdelivr.net/gh/VPSDance/ai-proxy-rules@main/rules/clash/google-ai.yaml",
+          "required": true
+        },
+        {
+          "name": "blackmatrix7/Gemini",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Gemini/Gemini.yaml",
+          "required": false
+        }
+      ]
+    },
+    "ai": {
+      "description": "海外 AI 聚合（OpenAI / Codex / Claude / Cursor / Grok 等，自动剥离 Gemini）",
+      "custom_file": "ai.yaml",
+      "exclude_sets": ["direct", "gemini"],
+      "upstreams": [
+        {
+          "name": "VPSDance/global-ai",
+          "url": "https://raw.githubusercontent.com/VPSDance/ai-proxy-rules/main/rules/clash/global.yaml",
+          "fallback_url": "https://cdn.jsdelivr.net/gh/VPSDance/ai-proxy-rules@main/rules/clash/global.yaml",
+          "required": true
+        },
+        {
+          "name": "MetaCubeX/category-ai-!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ai-!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "blackmatrix7/OpenAI",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml",
+          "required": false
+        },
+        {
+          "name": "blackmatrix7/Claude",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Claude/Claude.yaml",
+          "required": false
+        },
+        {
+          "name": "blackmatrix7/Copilot",
+          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Copilot/Copilot.yaml",
+          "required": false
+        }
+      ]
+    }
+  }
+}

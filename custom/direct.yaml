@@ -1,0 +1,5 @@
+# 个人直连规则（最高优先级 -> DIRECT，且自动走国内 DNS 解析）
+# 注意：不要在行尾写 ,DIRECT，策略出口已在主配置中指定
+payload:
+  - DOMAIN-SUFFIX,no.al
+  - DOMAIN,letcola.eu.org

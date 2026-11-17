@@ -1,0 +1,3 @@
+# 个人补充的中国大陆域名（自动合并编译进 cn.mrs，同时生效国内 DNS 分流 + 直连）
+# 支持写 +.example.cn 或 DOMAIN-SUFFIX,example.cn
+payload: []
