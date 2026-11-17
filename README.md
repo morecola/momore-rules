@@ -44,7 +44,12 @@
 │   ├── google.yaml             # 个人 Google/Gemini 补充规则（归入 🔍 谷歌服务）
 │   └── exclude.yaml            # 全局误杀剔除白名单（从广告及所有规则集中强制移除）
 ├── scripts/sync.py             # 多源并发拉取、域名树剪枝、CIDR 合并与 .mrs 编译脚本
-└── mihomo-config.yaml          # 配套精简版 Mihomo 配置模板（极速防泄漏 DNS + 11 个核心策略组）
+├── configs/                    # 【四套现成客户端配置】按需任选其一导入
+│   ├── mihomo-residential.yaml     # 带家宽前置版 + GitHub Raw 规则源（11 策略组）
+│   ├── mihomo-residential-cdn.yaml # 带家宽前置版 + jsDelivr CDN 加速源（11 策略组）
+│   ├── mihomo-standard.yaml        # 标准无家宽版 + GitHub Raw 规则源（9 策略组）
+│   └── mihomo-standard-cdn.yaml    # 标准无家宽版 + jsDelivr CDN 加速源（9 策略组）
+└── mihomo-config.yaml          # 默认主配置模板（同 configs/mihomo-residential.yaml）
 ```
 
 ---
@@ -76,13 +81,15 @@ git push -u origin main
    - `release` 分支首页会自动生成一张**构建统计表**（展示每个规则集合并前总条数、去重剪枝条数与编译后 `.mrs` 体积）。
    - `rules/` 目录下已生成全部 25 个规则集文件（21 个 `.mrs` + 对应的 `.yaml`）。
 
-### 第 4 步：填入节点并导入 `mihomo-config.yaml`
-`mihomo-config.yaml` 已预绑定至 `morecola/momore-rules` 的 `release` 分支，只需填入你的节点或 `proxy-providers` 即可直接使用：
+### 第 4 步：按需选择配置文件填入节点并导入
+`configs/` 目录下预置了 **4 套已绑定 `morecola/momore-rules` (`release` 分支) 的完整配置**，25 个规则集、防泄漏 DNS 与分流优先级完全一致，只需将 `proxies: []` 与 `__PROXY_NODES__` 替换为实际节点或 `proxy-providers` 即可导入使用：
 
-- **GitHub Raw 地址**（更新最及时，`mihomo-config.yaml` 已默认配置通过 `🚀 手动选择` 代理拉取）：
-  `https://raw.githubusercontent.com/morecola/momore-rules/release/rules/cn.mrs`
-- **jsDelivr CDN 镜像地址**（备选）：
-  `https://cdn.jsdelivr.net/gh/morecola/momore-rules@release/rules/cn.mrs`
+| 配置文件 | 家宽支持 | 规则拉取源 | 适用场景与节点过滤说明 |
+| :--- | :---: | :---: | :--- |
+| `configs/mihomo-residential.yaml` | 支持（11 组） | GitHub Raw | 含 `💻 前置节点` 与 `🏡 家宽优选`，适合拥有家宽落地节点的订阅（同根目录 `mihomo-config.yaml`） |
+| `configs/mihomo-residential-cdn.yaml` | 支持（11 组） | jsDelivr CDN | 同上，规则地址全部替换为 `cdn.jsdelivr.net/gh/morecola/momore-rules@release/...` |
+| `configs/mihomo-standard.yaml` | 无家宽（9 组） | GitHub Raw | 移除家宽与前置组；兼容带 `-` 的常规机场节点名（如 `HK-01`），仅过滤 `- \|`、家宽 `Big` 及流量/到期提示节点 |
+| `configs/mihomo-standard-cdn.yaml` | 无家宽（9 组） | jsDelivr CDN | 标准无家宽版 + `cdn.jsdelivr.net` 加速规则源 |
 
 ---
 

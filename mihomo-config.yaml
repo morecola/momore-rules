@@ -1,6 +1,9 @@
-# 已绑定规则源仓库：https://github.com/morecola/momore-rules (release 分支)
-# 如需切换为 jsDelivr CDN，可将 https://raw.githubusercontent.com/morecola/momore-rules/release
-# 替换为 https://cdn.jsdelivr.net/gh/morecola/momore-rules@release
+# 已绑定规则源仓库：https://github.com/morecola/momore-rules (release 分支，默认同 configs/mihomo-residential.yaml)
+# 预生成四套现成配置见 configs/ 目录：
+#   - configs/mihomo-residential.yaml      （带家宽前置 · GitHub Raw）
+#   - configs/mihomo-residential-cdn.yaml  （带家宽前置 · jsDelivr CDN）
+#   - configs/mihomo-standard.yaml         （标准无家宽 · GitHub Raw）
+#   - configs/mihomo-standard-cdn.yaml     （标准无家宽 · jsDelivr CDN）
 # 部署前请将 proxies: [] 和 __PROXY_NODES__ 替换为你的实际节点或 proxy-providers 订阅
 
 mixed-port: 7890
