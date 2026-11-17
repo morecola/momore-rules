@@ -13,7 +13,16 @@
       ],
       "exclude_rules": [
         "DOMAIN-SUFFIX,sentry.io",
-        "DOMAIN-SUFFIX,skk.moe"
+        "DOMAIN-SUFFIX,skk.moe",
+        "DOMAIN-SUFFIX,cloudflareinsights.com",
+        "DOMAIN-SUFFIX,aliapp.org",
+        "DOMAIN-SUFFIX,baichuan-sdk.alicdn.com",
+        "DOMAIN-SUFFIX,360buyimg.com",
+        "DOMAIN-SUFFIX,img1.gtimg.com",
+        "DOMAIN-SUFFIX,discuz.gtimg.cn",
+        "DOMAIN-SUFFIX,statsigcdn.com",
+        "DOMAIN-SUFFIX,mcdn.bilivideo.cn",
+        "DOMAIN-SUFFIX,mcdn.bilivideo.com"
       ],
       "upstreams": [
         {
@@ -66,8 +75,13 @@
       ]
     },
     "httpdns": {
-      "description": "HTTPDNS 与客户端加密 DNS 绕过拦截（防止国内 App 硬编码 HTTPDNS 绕过 Fake-IP 与复活广告）",
+      "description": "国内 App 硬编码 HTTPDNS 与系统私有代理金丝雀域名拦截（防绕过 Fake-IP 且不误伤海外正常 DoH）",
       "exclude_sets": ["direct", "proxy", "ai", "gemini"],
+      "extra_rules": [
+        "DOMAIN,mask.icloud.com",
+        "DOMAIN,mask-h2.icloud.com",
+        "DOMAIN,use-application-dns.net"
+      ],
       "upstreams": [
         {
           "name": "MetaCubeX/category-httpdns-cn",
@@ -77,11 +91,6 @@
         {
           "name": "blackmatrix7/BlockHttpDNS",
           "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/BlockHttpDNS/BlockHttpDNS.yaml",
-          "required": false
-        },
-        {
-          "name": "Aethersailor/Encrypted_DNS",
-          "url": "https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Encrypted_DNS_Domain.yaml",
           "required": false
         }
       ]
@@ -188,6 +197,11 @@
         {
           "name": "DustinWin/games-cn",
           "url": "https://raw.githubusercontent.com/DustinWin/ruleset_geodata/mihomo-ruleset/games-cn.list",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/category-games-!cn@cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-games-!cn@cn.yaml",
           "required": false
         }
       ]
@@ -345,8 +359,28 @@
       ]
     },
     "non-cn": {
-      "description": "非中国大陆代理域名汇总",
+      "description": "非中国大陆代理域名汇总（含海外站点与中资出海/海外云地域节点）",
       "exclude_sets": ["direct", "private", "apple-cn", "microsoft-cn", "pt-tracker", "games-cn"],
+      "extra_rules": [
+        "DOMAIN-SUFFIX,larksuite.com",
+        "DOMAIN-SUFFIX,larksuitecdn.com",
+        "DOMAIN-SUFFIX,aliexpress.com",
+        "DOMAIN-SUFFIX,aliexpress-media.com",
+        "DOMAIN-SUFFIX,aliexpress.us",
+        "DOMAIN-SUFFIX,lazada.com",
+        "DOMAIN-SUFFIX,lazada.sg",
+        "DOMAIN-SUFFIX,lazada.com.my",
+        "DOMAIN-SUFFIX,lazada.co.th",
+        "DOMAIN-SUFFIX,lazada.co.id",
+        "DOMAIN-SUFFIX,lazada.com.ph",
+        "DOMAIN-SUFFIX,lazada.vn",
+        "DOMAIN-SUFFIX,daraz.com",
+        "DOMAIN-SUFFIX,nytimes.cn",
+        "DOMAIN-SUFFIX,wsj.cn",
+        "DOMAIN-SUFFIX,bbc.cn",
+        "DOMAIN-SUFFIX,reuters.cn",
+        "DOMAIN-SUFFIX,dw.cn"
+      ],
       "upstreams": [
         {
           "name": "MetaCubeX/geolocation-!cn",
@@ -362,13 +396,117 @@
           "name": "Loyalsoldier/gfw",
           "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/gfw.txt",
           "required": false
+        },
+        {
+          "name": "MetaCubeX/alibaba@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/alibaba@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/alibabacloud@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/alibabacloud@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/aliyun@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/aliyun@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/tencent@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tencent@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/tencent-games@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tencent-games@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/bytedance@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bytedance@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/bilibili@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bilibili@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/huawei@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/huawei@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/huaweicloud@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/huaweicloud@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/xiaomi@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/xiaomi@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/jd@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/jd@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/netease@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netease@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/kurogames@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/kurogames@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/hypergryph@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/hypergryph@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/xiaohongshu@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/xiaohongshu@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/iqiyi@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/iqiyi@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/youku@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youku@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/ctrip@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ctrip@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/didi@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/didi@!cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/category-companies@!cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-companies@!cn.yaml",
+          "required": false
         }
       ]
     },
     "cn": {
       "description": "CN Site 中国大陆域名集（融合 MetaCubeX + Loyalsoldier + blackmatrix7，自动剥离海外服务防 DNS 泄漏）",
       "custom_file": "cn.yaml",
-      "exclude_sets": ["proxy", "google", "gemini", "ai", "dev", "scholar", "telegram", "httpdns", "non-cn"],
+      "exclude_sets": ["direct", "proxy", "google", "gemini", "ai", "dev", "scholar", "telegram", "httpdns", "non-cn"],
+      "exclude_rules": [
+        "DOMAIN-SUFFIX,ms",
+        "DOMAIN-SUFFIX,full"
+      ],
       "upstreams": [
         {
           "name": "MetaCubeX/cn (v2fly + dnsmasq-china-list)",
@@ -475,6 +613,25 @@
     }
   },
   "classical": {
+    "direct": {
+      "description": "个人直连与国际厂商中国大陆高速下载源（JetBrains / NVIDIA / HF-Mirror）",
+      "custom_file": "direct.yaml",
+      "extra_rules": [
+        "DOMAIN-SUFFIX,hf-mirror.com"
+      ],
+      "upstreams": [
+        {
+          "name": "MetaCubeX/jetbrains@cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/jetbrains@cn.yaml",
+          "required": false
+        },
+        {
+          "name": "MetaCubeX/nvidia@cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/nvidia@cn.yaml",
+          "required": false
+        }
+      ]
+    },
     "gemini": {
       "description": "Google AI / Gemini / AI Studio / NotebookLM（合并至谷歌服务）",
       "custom_file": "google.yaml",
@@ -494,10 +651,20 @@
       ]
     },
     "ai": {
-      "description": "海外 AI 聚合（OpenAI / Codex / Claude / Cursor / Grok / Apple Intelligence 等，自动剥离 Gemini）",
+      "description": "海外 AI 聚合（OpenAI / Codex / Claude / Cursor / Grok / Apple Intelligence 等，自动剥离 Gemini 与公共验证组件）",
       "custom_file": "ai.yaml",
       "exclude_sets": ["direct", "gemini"],
       "exclude_rules": [
+        "DOMAIN-SUFFIX,challenges.cloudflare.com",
+        "DOMAIN-SUFFIX,stripe.com",
+        "DOMAIN-SUFFIX,auth0.com",
+        "DOMAIN-SUFFIX,intercom.io",
+        "DOMAIN-SUFFIX,intercomcdn.com",
+        "DOMAIN,gspe1-ssl.ls.apple.com",
+        "DOMAIN,apple-relay.apple.com",
+        "DOMAIN,apple-relay.cloudflare.com",
+        "DOMAIN,apple-relay.fastly-edge.com",
+        "DOMAIN,apple-relay.mask.apple-dns.net",
         "DOMAIN-KEYWORD,datadog",
         "DOMAIN-SUFFIX,datadoghq.com",
         "DOMAIN,browser-intake-datadoghq.com",

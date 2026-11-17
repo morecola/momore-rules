@@ -8,18 +8,18 @@
 
 1. **多公开上游交叉互补（定义在 `sources.json`）**
    - **AdBlock 与防绕过拦截**：
-     - 去广告/防追踪/防 PCDN：`TG-Twilight/AWAvenue-Ads-Rule`（秋风广告规则）+ `Cats-Team/AdRules` + `hagezi/dns-blocklists (pro.mini)` + `privacy-protection-tools/anti-AD`（叠加 `dead-horse` 官方白名单并放行 `sentry.io`）+ `uselibrary/PCDN` + `SukkaW/sogouinput` + `Loyalsoldier/reject` + `MetaCubeX/category-ads-all`
-     - HTTPDNS / 加密 DNS 防绕过：`MetaCubeX/category-httpdns-cn` + `blackmatrix7/BlockHttpDNS`（含专用 HTTPDNS IP 段）+ `Aethersailor/Encrypted_DNS`，彻底杜绝国内 App 硬编码 HTTPDNS 绕过 Fake-IP 与复活广告
+     - 去广告/防追踪/防 PCDN：`TG-Twilight/AWAvenue-Ads-Rule`（秋风广告规则）+ `Cats-Team/AdRules` + `hagezi/dns-blocklists (pro.mini)` + `privacy-protection-tools/anti-AD`（叠加 `dead-horse` 官方白名单，并放行 `sentry.io`、淘宝滑块验证码、京东商品图、B 站流媒体等误杀域名）+ `uselibrary/PCDN` + `SukkaW/sogouinput` + `Loyalsoldier/reject` + `MetaCubeX/category-ads-all`
+     - HTTPDNS 与私有中继金丝雀拦截：`MetaCubeX/category-httpdns-cn` + `blackmatrix7/BlockHttpDNS`（含专用 HTTPDNS IP 段）+ Apple Private Relay / Mozilla DoH 官方金丝雀域名（`mask.icloud.com`、`use-application-dns.net`），防国内 App 绕过 Fake-IP 且不误伤海外正常 DoH 与 Safari 验证
    - **Fake-IP 豁免（`fakeip-filter`）**：`MetaCubeX/category-stun` + `DustinWin/fakeip-filter` + `SukkaW/clash_fake_ip_filter` + 多级 STUN 通配符与本地面板（`yacd` / `metacubexd` / `zashboard`）
    - **CN IP 大陆网段**：`gaoyifan/china-operator-ip`（每日实测电信/联通/移动/教育网 BGP 路由 IPv4 & IPv6）+ `Hackl0us/GeoIP2-CN`（`17mon/ipip.net` + 纯真 IP）+ `Loyalsoldier/cncidr` + `MetaCubeX/geoip-cn`
-   - **CN Site、大厂 CDN、BT/PT 与游戏满速直连**：`MetaCubeX/cn` + `Loyalsoldier/direct` + `blackmatrix7/China_Domain`；独立拆分 `apple-cn`、`microsoft-cn`、`pt-tracker`（公共/私有 Tracker 直连防机场封号）与 `games-cn`（`Aethersailor/Game_Download_CDN` + `Steam_CDN` + `steam@cn` + `category-games@cn`）
-   - **AI、Telegram 与分流专项**：`VPSDance/ai-proxy-rules` + `MetaCubeX/category-ai-!cn` + `MetaCubeX/apple-intelligence`；`Telegram` 域名 + 数据中心裸 IP 段（`MetaCubeX` + `Loyalsoldier` + `SukkaW`）双层覆盖
+   - **CN Site、跨境特例（`@cn` / `@!cn`）、BT/PT 与游戏满速直连**：`MetaCubeX/cn` + `Loyalsoldier/direct` + `blackmatrix7/China_Domain`；内置国际厂商国内 CDN 直连（`jetbrains@cn`、`nvidia@cn`、`hf-mirror.com`、`apple-cn`、`microsoft-cn`、`games-cn`、`category-games-!cn@cn`、`pt-tracker`），并将 20+ 国内大厂出海/海外云节点（`aliyun@!cn`、`tencent@!cn`、`bytedance@!cn`、`larksuite`、`aliexpress` 等）精准归入 `non-cn`
+   - **AI、Telegram 与分流专项**：`VPSDance/ai-proxy-rules` + `MetaCubeX/category-ai-!cn` + `MetaCubeX/apple-intelligence`（自动剥离 `challenges.cloudflare.com`、`stripe.com`、`auth0.com` 等公共验证组件，防止跨出口 IP 导致 Turnstile 刷不出）；`Telegram` 域名 + 数据中心裸 IP 段双层覆盖
 2. **三重深度去重与拓扑防污染算法（`scripts/sync.py`）**
    - **父子域名后缀树剪枝**：自动兼容 YAML / 纯文本 / Classical / AdBlock `||domain^` 四种格式及多级通配符（`+.stun.*.*`）；当存在 `+.google.com` 时自动剪枝多余子域名。
    - **相邻与重叠 CIDR 子网聚合**：使用标准库 `ipaddress.collapse_addresses` 自动合并重叠或相邻的 IPv4 / IPv6 网段，支持跨集合子网差集剔除，并对 `classical` 规则中的 IP 自动强制补齐 `,no-resolve`。
-   - **拓扑依赖防污染剥离（支持 `exclude_sets` / `exclude_upstreams` / `exclude_rules`）**：
+   - **拓扑依赖防污染剥离（支持 `exclude_sets` / `exclude_upstreams` / `exclude_rules` / `extra_rules`）**：
      - 自动将 `gemini`（Google AI）从 `ai` 中剥离，并从 `category-ads-all` 与 `httpdns` 中保护 `ai`、`gemini`、`pt-tracker` 关键业务域名不被上游规则误伤。
-     - 自动从大陆直连域名 `cn.mrs` 中剔除 `google`、`gemini`、`ai`、`dev`、`scholar`、`telegram`、`httpdns`、`non-cn` 及个人代理域名，彻底杜绝国内 DNS 泄漏。
+     - 自动从大陆直连域名 `cn.mrs` 中剔除 `direct`、`proxy`、`google`、`gemini`、`ai`、`dev`、`scholar`、`telegram`、`httpdns`、`non-cn` 及污染顶级域（`.ms` / `.full`），配合四层有序 `nameserver-policy` 彻底杜绝国内 DNS 泄漏。
      - 自动从 `scholar` / `dev` 中剥离国内学术库（知网/万方/维普/北大法宝）与国内开发镜像。
 3. **官方内核原生编译 `.mrs` + 孤儿分支零体积膨胀**
    - GitHub Actions 每次构建时自动拉取最新官方 `mihomo` 二进制，执行 `mihomo convert-ruleset` 同时生成 `.mrs`（极致加载速度与低内存占用）与可读的 `.yaml`。

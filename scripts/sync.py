@@ -234,6 +234,8 @@ class DomainSet:
         return False
 
     def covers_suffix(self, suffix: str) -> bool:
+        if suffix in self.exacts:
+            return True
         return self._has_parent_in(suffix, self.suffixes, include_self=True)
 
     def covers_exact(self, domain: str) -> bool:
@@ -585,12 +587,12 @@ def main() -> int:
 
     # 1. 加载并严格校验本地 custom/ 规则
     custom_exclude = read_custom_classical("exclude.yaml")
-    direct_cset = read_custom_classical("direct.yaml")
-    direct_cset.subtract(custom_exclude)
+    user_direct_cset = read_custom_classical("direct.yaml")
+    user_direct_cset.subtract(custom_exclude)
 
     proxy_cset = read_custom_classical("proxy.yaml")
     proxy_cset.subtract(custom_exclude)
-    proxy_cset.subtract(direct_cset)
+    proxy_cset.subtract(user_direct_cset)
 
     # 2. 并发拉取 sources.json 中定义的所有上游文本（含 exclude_upstreams，按 URL 去重）
     fetched_texts: dict[str, str] = {}
@@ -626,19 +628,48 @@ def main() -> int:
                     print(f"  [WARN] 补充上游拉取失败（已自动跳过）{up['name']}: {exc}", file=sys.stderr)
 
     # 3. 先构建 classical 规则集（direct / proxy / gemini / ai），以便后续给 domain 集合做防污染剔除
+    direct_cset = ClassicalSet()
+    direct_cfg = config.get("classical", {}).get("direct", {})
+    for up in direct_cfg.get("upstreams", []):
+        txt = fetched_texts.get(up["url"], "")
+        if txt:
+            direct_cset.ingest_text(txt, source_name=up["name"], strict=False)
+    if direct_cfg.get("extra_rules"):
+        direct_cset.ingest_text(
+            "\n".join(direct_cfg["extra_rules"]),
+            source_name="sources.json:direct.extra_rules",
+            strict=True,
+        )
+    direct_cset.subtract(proxy_cset)
+    direct_cset.ingest_text(
+        "\n".join(user_direct_cset.to_payload_list()),
+        source_name="custom/direct.yaml",
+        strict=True,
+    )
+    direct_cset.subtract(custom_exclude)
+
     classical_sets: dict[str, ClassicalSet] = {
         "direct": direct_cset,
         "proxy": proxy_cset,
     }
 
+    other_classical_cfg = {
+        k: v for k, v in config.get("classical", {}).items() if k not in ("direct", "proxy")
+    }
     for name, item_cfg in toposort_section(
-        config.get("classical", {}), set(classical_sets.keys())
+        other_classical_cfg, set(classical_sets.keys())
     ):
         cset = ClassicalSet()
         for up in item_cfg.get("upstreams", []):
             txt = fetched_texts.get(up["url"], "")
             if txt:
                 cset.ingest_text(txt, source_name=up["name"], strict=False)
+        if item_cfg.get("extra_rules"):
+            cset.ingest_text(
+                "\n".join(item_cfg["extra_rules"]),
+                source_name=f"sources.json:{name}.extra_rules",
+                strict=True,
+            )
 
         for ex_name in item_cfg.get("exclude_sets", []):
             cset.subtract(classical_sets[ex_name])
@@ -684,6 +715,12 @@ def main() -> int:
             txt = fetched_texts.get(up["url"], "")
             if txt:
                 dset.ingest_text(txt, source_name=up["name"], strict=False)
+        if item_cfg.get("extra_rules"):
+            dset.ingest_text(
+                "\n".join(item_cfg["extra_rules"]),
+                source_name=f"sources.json:{name}.extra_rules",
+                strict=True,
+            )
 
         for ex_name in item_cfg.get("exclude_sets", []):
             if ex_name in classical_sets:
@@ -731,6 +768,12 @@ def main() -> int:
             txt = fetched_texts.get(up["url"], "")
             if txt:
                 iset.ingest_text(txt, source_name=up["name"], strict=False)
+        if item_cfg.get("extra_rules"):
+            iset.ingest_text(
+                "\n".join(item_cfg["extra_rules"]),
+                source_name=f"sources.json:{name}.extra_rules",
+                strict=True,
+            )
 
         for ex_name in item_cfg.get("exclude_sets", []):
             if ex_name in classical_sets:

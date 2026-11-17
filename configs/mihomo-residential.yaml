@@ -41,6 +41,7 @@ dns:
   cache-algorithm: arc
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  fake-ip-range6: 2001:2::1/64
   fake-ip-filter:
     - rule-set:private
     - rule-set:category-ntp
@@ -65,7 +66,13 @@ dns:
     - https://8.8.8.8/dns-query#🚀 手动选择
   nameserver-policy:
     rule-set:category-ads-all,httpdns: rcode://success
-    rule-set:direct,private,cn,apple-cn,microsoft-cn,games-cn:
+    rule-set:direct,private,apple-cn,microsoft-cn,games-cn:
+      - 223.5.5.5
+      - 119.29.29.29
+    rule-set:proxy,gemini,google,ai,telegram,scholar,non-cn:
+      - https://1.1.1.1/dns-query#🚀 手动选择
+      - https://8.8.8.8/dns-query#🚀 手动选择
+    rule-set:cn:
       - 223.5.5.5
       - 119.29.29.29
 proxies: []
@@ -416,5 +423,5 @@ rules:
   - RULE-SET,apple,🍎 苹果服务
   - RULE-SET,microsoft,Ⓜ️ 微软服务
   - RULE-SET,telegramip,📲 电报消息,no-resolve
-  - RULE-SET,cnip,DIRECT,no-resolve
+  - RULE-SET,cnip,DIRECT
   - MATCH,🚀 手动选择
