@@ -12,7 +12,7 @@
      - HTTPDNS 与私有中继金丝雀拦截：`MetaCubeX/category-httpdns-cn` + `blackmatrix7/BlockHttpDNS`（含专用 HTTPDNS IP 段）+ Apple Private Relay / Mozilla DoH 官方金丝雀域名（`mask.icloud.com`、`use-application-dns.net`），防国内 App 绕过 Fake-IP 且不误伤海外正常 DoH 与 Safari 验证
    - **Fake-IP 豁免（`fakeip-filter`）**：`MetaCubeX/category-stun` + `DustinWin/fakeip-filter` + `SukkaW/clash_fake_ip_filter` + 多级 STUN 通配符与本地面板（`yacd` / `metacubexd` / `zashboard`）
    - **CN IP 大陆网段**：`gaoyifan/china-operator-ip`（每日实测电信/联通/移动/教育网 BGP 路由 IPv4 & IPv6）+ `Hackl0us/GeoIP2-CN`（`17mon/ipip.net` + 纯真 IP）+ `Loyalsoldier/cncidr` + `MetaCubeX/geoip-cn`
-   - **CN Site、跨境特例（`@cn` / `@!cn`）、BT/PT 与游戏满速直连**：`MetaCubeX/cn` + `Loyalsoldier/direct` + `blackmatrix7/China_Domain`；内置国际厂商国内 CDN 直连（`jetbrains@cn`、`nvidia@cn`、`hf-mirror.com`、`apple-cn`、`microsoft-cn`、`games-cn`、`category-games-!cn@cn`、`pt-tracker`），并将 20+ 国内大厂出海/海外云节点（`aliyun@!cn`、`tencent@!cn`、`bytedance@!cn`、`larksuite`、`aliexpress` 等）精准归入 `non-cn`
+   - **CN Site 高纯度直连 + `cnip` IP 兜底**：`MetaCubeX/geolocation-cn` + `blackmatrix7/China_Domain`（剔除 10 万条易误伤的陈旧僵尸域名，将冷门/长尾/迁至 Cloudflare 的域名交还给 `cnip` 按真实解析 IP 精准裁决）；内置国际厂商国内 CDN 直连（`jetbrains@cn`、`nvidia@cn`、`hf-mirror.com`、`apple-cn`、`microsoft-cn`、`games-cn`、`category-games-!cn@cn`、`pt-tracker`），并将 20+ 国内大厂出海/海外云节点（`aliyun@!cn`、`tencent@!cn`、`bytedance@!cn`、`larksuite`、`aliexpress` 等）精准归入 `non-cn`
    - **AI、Telegram 与分流专项**：`VPSDance/ai-proxy-rules` + `MetaCubeX/category-ai-!cn` + `MetaCubeX/apple-intelligence`（自动剥离 `challenges.cloudflare.com`、`stripe.com`、`auth0.com` 等公共验证组件，防止跨出口 IP 导致 Turnstile 刷不出）；`Telegram` 域名 + 数据中心裸 IP 段双层覆盖
 2. **三重深度去重与拓扑防污染算法（`scripts/sync.py`）**
    - **父子域名后缀树剪枝**：自动兼容 YAML / 纯文本 / Classical / AdBlock `||domain^` 四种格式及多级通配符（`+.stun.*.*`）；当存在 `+.google.com` 时自动剪枝多余子域名。

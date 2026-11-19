@@ -500,7 +500,7 @@
       ]
     },
     "cn": {
-      "description": "CN Site 中国大陆域名集（融合 MetaCubeX + Loyalsoldier + blackmatrix7，自动剥离海外服务防 DNS 泄漏）",
+      "description": "CN Site 高纯度中国大陆主流域名集（MetaCubeX/geolocation-cn + blackmatrix7/China_Domain，剔除 10 万条陈旧僵尸域名，长尾交由 cnip 按真实 IP 判定）",
       "custom_file": "cn.yaml",
       "exclude_sets": ["direct", "proxy", "google", "gemini", "ai", "dev", "scholar", "telegram", "httpdns", "non-cn"],
       "exclude_rules": [
@@ -509,14 +509,9 @@
       ],
       "upstreams": [
         {
-          "name": "MetaCubeX/cn (v2fly + dnsmasq-china-list)",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.yaml",
+          "name": "MetaCubeX/geolocation-cn (v2fly 活跃国内服务)",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-cn.yaml",
           "required": true
-        },
-        {
-          "name": "Loyalsoldier/direct",
-          "url": "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt",
-          "required": false
         },
         {
           "name": "blackmatrix7/China_Domain",
