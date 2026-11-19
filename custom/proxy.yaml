@@ -3,4 +3,9 @@
 # 示例：
 #   - DOMAIN-SUFFIX,example.com
 #   - DOMAIN-KEYWORD,example
-payload: []
+payload:
+  # 上游 dnsmasq-china-list 误收录的海外图床 CDN 域名（同步自动从 cn.mrs 剔除）
+  - DOMAIN-SUFFIX,djhdhs.us
+  - DOMAIN-SUFFIX,djsnm.app
+  - DOMAIN-SUFFIX,j03og.app
+  - DOMAIN-SUFFIX,0hax7.app
