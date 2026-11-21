@@ -1,0 +1,11 @@
+# direct.yaml - 个人直连与国际厂商中国大陆高速下载源（JetBrains / NVIDIA / HF-Mirror）
+payload:
+  - DOMAIN-SUFFIX,cdn.jetbrains.com
+  - DOMAIN-SUFFIX,geforce.cn
+  - DOMAIN-SUFFIX,gputechconf.cn
+  - DOMAIN-SUFFIX,hf-mirror.com
+  - DOMAIN-SUFFIX,jetbrains.com.cn
+  - DOMAIN-SUFFIX,no.al
+  - DOMAIN-SUFFIX,nvidia.cn
+  - DOMAIN,cn.download.nvidia.com
+  - DOMAIN,letcola.eu.org
