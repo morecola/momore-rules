@@ -291,7 +291,11 @@
       "exclude_sets": ["direct", "private", "apple-cn", "microsoft-cn", "pt-tracker", "games-cn"],
       "extra_rules": [
         "DOMAIN-SUFFIX,larksuite.com",
+        "DOMAIN-SUFFIX,larksuite-pre.com",
         "DOMAIN-SUFFIX,larksuitecdn.com",
+        "DOMAIN-SUFFIX,larksuiteimg.com",
+        "DOMAIN-SUFFIX,lark-passport-qa-sg.net",
+        "DOMAIN-SUFFIX,byteintl.net",
         "DOMAIN-SUFFIX,aliexpress.com",
         "DOMAIN-SUFFIX,aliexpress-media.com",
         "DOMAIN-SUFFIX,aliexpress.us",
@@ -307,7 +311,11 @@
         "DOMAIN-SUFFIX,wsj.cn",
         "DOMAIN-SUFFIX,bbc.cn",
         "DOMAIN-SUFFIX,reuters.cn",
-        "DOMAIN-SUFFIX,dw.cn"
+        "DOMAIN-SUFFIX,reutersagency.cn",
+        "DOMAIN-SUFFIX,thomsonreuters.cn",
+        "DOMAIN-SUFFIX,dw.cn",
+        "DOMAIN-SUFFIX,airbnb.cn",
+        "DOMAIN-SUFFIX,longbridge.cn"
       ],
       "upstreams": [
         {
@@ -438,7 +446,12 @@
       "exclude_sets": ["direct", "proxy", "google", "gemini", "ai", "dev", "scholar", "telegram", "httpdns", "non-cn"],
       "exclude_rules": [
         "DOMAIN-SUFFIX,ms",
-        "DOMAIN-SUFFIX,full"
+        "DOMAIN-SUFFIX,full",
+        "DOMAIN-SUFFIX,larksuite.com.ttdns1.com",
+        "DOMAIN-SUFFIX,larksuite.com.ttdns2.com",
+        "DOMAIN-SUFFIX,larksuiteimg-boe.com",
+        "DOMAIN-SUFFIX,larksuiteimg-pre.com",
+        "DOMAIN,origin-a.akamaihd.ne"
       ],
       "upstreams": [
         {
