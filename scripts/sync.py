@@ -262,6 +262,16 @@ class DomainSet:
             )
         }
 
+    def subtract_keywords(self, keywords: list[str]) -> None:
+        if not keywords:
+            return
+        kws = [k.lower() for k in keywords if k]
+        if not kws:
+            return
+        self.suffixes = {s for s in self.suffixes if not any(k in s for k in kws)}
+        self.exacts = {d for d in self.exacts if not any(k in d for k in kws)}
+        self.wildcards = {w for w in self.wildcards if not any(k in w for k in kws)}
+
     def deduplicate(self) -> None:
         """父子域名树精简：若 +.google.com 存在，自动剪枝 +.mail.google.com 与 www.google.com"""
         self.suffixes = {
@@ -493,8 +503,16 @@ class ClassicalSet:
                 self.other_rules.append(f"{rtype},{target}")
                 self.raw_count += 1
 
+    def keywords(self) -> list[str]:
+        return [
+            r.split(",", 1)[1].strip().lower()
+            for r in self.other_rules
+            if r.startswith("DOMAIN-KEYWORD,") and "," in r
+        ]
+
     def subtract(self, other: "ClassicalSet") -> None:
         self.domains.subtract(other.domains)
+        self.domains.subtract_keywords(other.keywords())
         self.ips.subtract(other.ips)
         other_set = set(other.other_rules)
         self.other_rules = [r for r in self.other_rules if r not in other_set]
@@ -696,15 +714,6 @@ def main() -> int:
             txt = fetched_texts.get(up["url"], "")
             if txt:
                 cset.ingest_text(txt, source_name=up["name"], strict=False)
-        if item_cfg.get("extra_rules"):
-            cset.ingest_text(
-                "\n".join(item_cfg["extra_rules"]),
-                source_name=f"sources.json:{name}.extra_rules",
-                strict=True,
-            )
-
-        for ex_name in item_cfg.get("exclude_sets", []):
-            cset.subtract(classical_sets[ex_name])
 
         if item_cfg.get("exclude_upstreams") or item_cfg.get("exclude_rules"):
             local_ex = ClassicalSet()
@@ -719,6 +728,16 @@ def main() -> int:
                     strict=True,
                 )
             cset.subtract(local_ex)
+
+        if item_cfg.get("extra_rules"):
+            cset.ingest_text(
+                "\n".join(item_cfg["extra_rules"]),
+                source_name=f"sources.json:{name}.extra_rules",
+                strict=True,
+            )
+
+        for ex_name in item_cfg.get("exclude_sets", []):
+            cset.subtract(classical_sets[ex_name])
 
         # 个人 custom/ 规则优先级高于上游剔除表，仅受全局 exclude/direct/proxy 约束
         if item_cfg.get("custom_file"):
@@ -747,18 +766,6 @@ def main() -> int:
             txt = fetched_texts.get(up["url"], "")
             if txt:
                 dset.ingest_text(txt, source_name=up["name"], strict=False)
-        if item_cfg.get("extra_rules"):
-            dset.ingest_text(
-                "\n".join(item_cfg["extra_rules"]),
-                source_name=f"sources.json:{name}.extra_rules",
-                strict=True,
-            )
-
-        for ex_name in item_cfg.get("exclude_sets", []):
-            if ex_name in classical_sets:
-                dset.subtract(classical_sets[ex_name].domains)
-            if ex_name in domain_sets:
-                dset.subtract(domain_sets[ex_name])
 
         if item_cfg.get("exclude_upstreams") or item_cfg.get("exclude_rules"):
             local_ex = DomainSet()
@@ -774,6 +781,19 @@ def main() -> int:
                 )
             dset.subtract(local_ex)
 
+        if item_cfg.get("extra_rules"):
+            dset.ingest_text(
+                "\n".join(item_cfg["extra_rules"]),
+                source_name=f"sources.json:{name}.extra_rules",
+                strict=True,
+            )
+
+        for ex_name in item_cfg.get("exclude_sets", []):
+            if ex_name in classical_sets:
+                dset.subtract(classical_sets[ex_name].domains)
+            if ex_name in domain_sets:
+                dset.subtract(domain_sets[ex_name])
+
         if item_cfg.get("custom_file"):
             custom_path = CUSTOM_DIR / item_cfg["custom_file"]
             if custom_path.exists():
@@ -784,6 +804,7 @@ def main() -> int:
                 )
 
         dset.subtract(custom_exclude.domains)
+        dset.subtract_keywords(custom_exclude.keywords())
         for ex_name in item_cfg.get("exclude_sets", []):
             if ex_name in ("direct", "proxy"):
                 dset.subtract(classical_sets[ex_name].domains)
@@ -800,18 +821,6 @@ def main() -> int:
             txt = fetched_texts.get(up["url"], "")
             if txt:
                 iset.ingest_text(txt, source_name=up["name"], strict=False)
-        if item_cfg.get("extra_rules"):
-            iset.ingest_text(
-                "\n".join(item_cfg["extra_rules"]),
-                source_name=f"sources.json:{name}.extra_rules",
-                strict=True,
-            )
-
-        for ex_name in item_cfg.get("exclude_sets", []):
-            if ex_name in classical_sets:
-                iset.subtract(classical_sets[ex_name].ips)
-            if ex_name in ip_sets:
-                iset.subtract(ip_sets[ex_name])
 
         if item_cfg.get("exclude_upstreams") or item_cfg.get("exclude_rules"):
             local_ex = IPCIDRSet()
@@ -826,6 +835,19 @@ def main() -> int:
                     strict=True,
                 )
             iset.subtract(local_ex)
+
+        if item_cfg.get("extra_rules"):
+            iset.ingest_text(
+                "\n".join(item_cfg["extra_rules"]),
+                source_name=f"sources.json:{name}.extra_rules",
+                strict=True,
+            )
+
+        for ex_name in item_cfg.get("exclude_sets", []):
+            if ex_name in classical_sets:
+                iset.subtract(classical_sets[ex_name].ips)
+            if ex_name in ip_sets:
+                iset.subtract(ip_sets[ex_name])
 
         if item_cfg.get("custom_file"):
             custom_path = CUSTOM_DIR / item_cfg["custom_file"]

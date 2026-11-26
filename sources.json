@@ -33,7 +33,8 @@
         "DOMAIN,proxy.golang.org",
         "DOMAIN,lens.l.google.com",
         "DOMAIN-SUFFIX,media.dssott.com",
-        "DOMAIN,na.b.g-tun.com"
+        "DOMAIN,na.b.g-tun.com",
+        "DOMAIN-SUFFIX,steamcontent.com"
       ],
       "upstreams": [
         {
@@ -64,7 +65,11 @@
       ]
     },
     "category-ntp": {
-      "description": "NTP 时间同步服务域名",
+      "description": "NTP 时间同步服务域名（剥离被 GFW 污染/封锁的 Google / Facebook NTP）",
+      "exclude_sets": ["google"],
+      "exclude_rules": [
+        "DOMAIN-SUFFIX,facebook.com"
+      ],
       "upstreams": [
         {
           "name": "MetaCubeX/category-ntp",
@@ -79,8 +84,18 @@
       ]
     },
     "pt-tracker": {
-      "description": "BT / PT Tracker 与私有种子站直连域名（防代理封号与免 Fake-IP）",
+      "description": "BT / PT Tracker 与私有种子站直连域名（防代理封号与免 Fake-IP，剥离动漫花园等被墙公网站点）",
       "exclude_sets": ["proxy"],
+      "exclude_rules": [
+        "DOMAIN-SUFFIX,dmhy.org",
+        "DOMAIN-SUFFIX,dmhy.best",
+        "DOMAIN-SUFFIX,nnm-club.cc",
+        "DOMAIN-SUFFIX,nnm-club.info",
+        "DOMAIN-SUFFIX,share.ilolicon.com",
+        "DOMAIN-SUFFIX,appspot.com",
+        "DOMAIN-SUFFIX,archive.org",
+        "DOMAIN-SUFFIX,workers.dev"
+      ],
       "upstreams": [
         {
           "name": "MetaCubeX/category-public-tracker",
@@ -100,8 +115,21 @@
       ]
     },
     "games-cn": {
-      "description": "中国大陆游戏与国际平台国内下载 CDN 直连域名（Steam / Epic / PSN / Xbox / 暴雪满速下载）",
+      "description": "中国大陆游戏与国际平台国内下载 CDN 直连域名（纯净本土节点，剥离被墙 Steam 社区图床与海外 Fastly/Google CDN）",
       "exclude_sets": ["proxy"],
+      "exclude_rules": [
+        "DOMAIN-SUFFIX,steamusercontent.com",
+        "DOMAIN-SUFFIX,steamcontent.com"
+      ],
+      "extra_rules": [
+        "DOMAIN-SUFFIX,dl.playstation.net",
+        "DOMAIN,alibaba.cdn.steampipe.steamcontent.com",
+        "DOMAIN,steampipe.steamcontent.tnkjmec.com",
+        "DOMAIN,assets1.xboxlive.com",
+        "DOMAIN,assets2.xboxlive.com",
+        "DOMAIN,xvcf1.xboxlive.com",
+        "DOMAIN,xvcf2.xboxlive.com"
+      ],
       "upstreams": [
         {
           "name": "MetaCubeX/category-games@cn",
@@ -111,11 +139,6 @@
         {
           "name": "MetaCubeX/steam@cn",
           "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/steam@cn.yaml",
-          "required": false
-        },
-        {
-          "name": "Aethersailor/Game_Download_CDN",
-          "url": "https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Game_Download_CDN_Domain.yaml",
           "required": false
         },
         {
@@ -314,8 +337,10 @@
         "DOMAIN-SUFFIX,reutersagency.cn",
         "DOMAIN-SUFFIX,thomsonreuters.cn",
         "DOMAIN-SUFFIX,dw.cn",
+        "DOMAIN-SUFFIX,jinrieluosi.cn",
         "DOMAIN-SUFFIX,airbnb.cn",
-        "DOMAIN-SUFFIX,longbridge.cn"
+        "DOMAIN-SUFFIX,longbridge.cn",
+        "DOMAIN-SUFFIX,proximabeta.com"
       ],
       "upstreams": [
         {
@@ -441,17 +466,31 @@
       ]
     },
     "cn": {
-      "description": "CN Site 高纯度中国大陆主流域名集（geolocation-cn + tld-cn + 主流国内大厂域 + China_Domain + SukkaW/domestic，自动剥离 non-cn 海外业务，长尾交由 cnip 按真实 IP 判定）",
+      "description": "CN Site 高纯度中国大陆主流域名集（geolocation-cn + tld-cn + SukkaW/domestic + 国内银行/DeepSeek，彻底杜绝海外站点/机场/VPS/外站 PT 混入，长尾交由 cnip 按真实 IP 判定）",
       "custom_file": "cn.yaml",
       "exclude_sets": ["direct", "proxy", "google", "gemini", "ai", "dev", "scholar", "telegram", "httpdns", "non-cn"],
+      "extra_rules": [
+        "DOMAIN-SUFFIX,servicewechat.com",
+        "DOMAIN-SUFFIX,tenpay.com",
+        "DOMAIN-SUFFIX,iqoo.com",
+        "DOMAIN-SUFFIX,wps.cn",
+        "DOMAIN-SUFFIX,wps.com",
+        "DOMAIN-SUFFIX,kdocs.cn",
+        "DOMAIN-SUFFIX,taptap.cn",
+        "DOMAIN-SUFFIX,taptap.com",
+        "DOMAIN-SUFFIX,luckincoffee.com",
+        "DOMAIN-SUFFIX,bankofchina.com",
+        "DOMAIN-SUFFIX,chinaunicom.com",
+        "DOMAIN-SUFFIX,citicbank.com",
+        "DOMAIN-SUFFIX,ecitic.com"
+      ],
       "exclude_rules": [
         "DOMAIN-SUFFIX,ms",
         "DOMAIN-SUFFIX,full",
-        "DOMAIN-SUFFIX,larksuite.com.ttdns1.com",
-        "DOMAIN-SUFFIX,larksuite.com.ttdns2.com",
-        "DOMAIN-SUFFIX,larksuiteimg-boe.com",
-        "DOMAIN-SUFFIX,larksuiteimg-pre.com",
-        "DOMAIN,origin-a.akamaihd.ne"
+        "DOMAIN-SUFFIX,skk.moe",
+        "DOMAIN-SUFFIX,klook.com",
+        "DOMAIN-SUFFIX,alibaba.com",
+        "DOMAIN-SUFFIX,jinrieluosi.cn"
       ],
       "upstreams": [
         {
@@ -465,88 +504,13 @@
           "required": true
         },
         {
-          "name": "blackmatrix7/China_Domain",
-          "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/China/China_Domain.yaml",
-          "required": false
-        },
-        {
-          "name": "SukkaW/domestic",
+          "name": "SukkaW/domestic (精选国内主流站点与 CDN)",
           "url": "https://ruleset.skk.moe/Clash/non_ip/domestic.txt",
-          "required": false
+          "required": true
         },
         {
-          "name": "MetaCubeX/alibaba",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/alibaba.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/tencent",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tencent.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/bytedance",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bytedance.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/jd",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/jd.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/netease",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netease.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/bilibili",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bilibili.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/huawei",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/huawei.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/xiaomi",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/xiaomi.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/vivo",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/vivo.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/oppo",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/oppo.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/xiaohongshu",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/xiaohongshu.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/ctrip",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ctrip.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/didi",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/didi.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/iqiyi",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/iqiyi.yaml",
-          "required": false
-        },
-        {
-          "name": "MetaCubeX/youku",
-          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youku.yaml",
+          "name": "MetaCubeX/category-bank-cn",
+          "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-bank-cn.yaml",
           "required": false
         },
         {
