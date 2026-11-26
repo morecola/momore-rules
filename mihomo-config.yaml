@@ -39,6 +39,7 @@ sniffer:
   skip-domain:
     - +.push.apple.com
     - Mijia Cloud
+    - dlg.io.mi.com
 dns:
   enable: true
   ipv6: false
@@ -49,7 +50,6 @@ dns:
   fake-ip-filter:
     - rule-set:private
     - rule-set:category-ntp
-    - rule-set:category-ads-all
     - rule-set:httpdns
     - rule-set:fakeip-filter
     - rule-set:pt-tracker
@@ -59,26 +59,27 @@ dns:
     - 223.5.5.5
     - 119.29.29.29
   proxy-server-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
+    - https://223.5.5.5/dns-query
+    - https://1.12.12.12/dns-query
   direct-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
-  direct-nameserver-follow-policy: false
+    - https://223.5.5.5/dns-query
+    - https://1.12.12.12/dns-query
+  direct-nameserver-follow-policy: true
   nameserver:
-    - https://1.1.1.1/dns-query#🚀 手动选择
-    - https://8.8.8.8/dns-query#🚀 手动选择
+    - 'https://8.8.8.8/dns-query#🚀 手动选择&ecs=223.5.5.0/24&ecs-override=true'
+    - 'https://8.8.4.4/dns-query#🚀 手动选择&ecs=223.5.5.0/24&ecs-override=true'
   nameserver-policy:
-    rule-set:category-ads-all,httpdns: rcode://success
-    rule-set:direct,private,apple-cn,microsoft-cn,games-cn:
-      - 223.5.5.5
-      - 119.29.29.29
-    rule-set:proxy,gemini,google,ai,telegram,scholar,non-cn:
+    rule-set:httpdns: rcode://success
+    rule-set:private: system
+    rule-set:direct,category-ntp,pt-tracker,apple-cn,microsoft-cn,games-cn:
+      - https://223.5.5.5/dns-query
+      - https://1.12.12.12/dns-query
+    rule-set:proxy,gemini,google,ai,telegram,dev,scholar,non-cn:
       - https://1.1.1.1/dns-query#🚀 手动选择
       - https://8.8.8.8/dns-query#🚀 手动选择
     rule-set:cn:
-      - 223.5.5.5
-      - 119.29.29.29
+      - https://223.5.5.5/dns-query
+      - https://1.12.12.12/dns-query
 proxies: []
 proxy-groups:
   - name: 🚀 手动选择
@@ -213,14 +214,6 @@ rule-providers:
     proxy: 🚀 手动选择
     path: ./rule_provider/proxy.yaml
     url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/proxy.yaml
-  category-ads-all:
-    type: http
-    behavior: domain
-    format: mrs
-    interval: 86400
-    proxy: 🚀 手动选择
-    path: ./rule_provider/category-ads-all.mrs
-    url: https://raw.githubusercontent.com/morecola/momore-rules/release/rules/category-ads-all.mrs
   httpdns:
     type: http
     behavior: domain
@@ -405,9 +398,8 @@ rules:
   - RULE-SET,category-ntp,DIRECT
   - RULE-SET,httpdns,REJECT
   - RULE-SET,httpdns-ip,REJECT,no-resolve
-  - RULE-SET,category-ads-all,REJECT
   - RULE-SET,pt-tracker,DIRECT
-  - AND,((NETWORK,udp),(DST-PORT,443),(OR,((RULE-SET,ai),(RULE-SET,gemini)))),REJECT
+  - AND,((NETWORK,udp),(DST-PORT,443),(OR,((RULE-SET,ai),(RULE-SET,gemini),(RULE-SET,google)))),REJECT
   - RULE-SET,gemini,🔍 谷歌服务
   - RULE-SET,google,🔍 谷歌服务
   - RULE-SET,ai,🤖 AI 服务

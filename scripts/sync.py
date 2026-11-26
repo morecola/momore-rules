@@ -188,9 +188,13 @@ class DomainSet:
                 if rtype == "DOMAIN-SUFFIX":
                     if not self.add_suffix(val) and strict:
                         raise ValueError(f"[{source_name}] 非法域名后缀: {raw!r}")
-                elif rtype in {"DOMAIN", "DOMAIN-WILDCARD"}:
+                elif rtype == "DOMAIN":
                     if not self.add_exact(val) and strict:
                         raise ValueError(f"[{source_name}] 非法域名: {raw!r}")
+                elif rtype == "DOMAIN-WILDCARD":
+                    ok = self.add_suffix(val[2:]) if val.startswith("+.") else self.add_exact(val)
+                    if not ok and strict:
+                        raise ValueError(f"[{source_name}] 非法通配域名: {raw!r}")
                 elif strict:
                     raise ValueError(f"[{source_name}] domain 规则集不支持类型 {rtype!r}: {raw!r}")
                 # 非严格模式下忽略 DOMAIN-KEYWORD / IP-CIDR 等非 domain rule-set 支持的类型
@@ -234,8 +238,6 @@ class DomainSet:
         return False
 
     def covers_suffix(self, suffix: str) -> bool:
-        if suffix in self.exacts:
-            return True
         return self._has_parent_in(suffix, self.suffixes, include_self=True)
 
     def covers_exact(self, domain: str) -> bool:
@@ -293,24 +295,43 @@ class DomainSet:
 # ---------------------------------------------------------------------------
 # 2. IP-CIDR 集合与「相邻/重叠子网聚合」引擎
 # ---------------------------------------------------------------------------
-def _exclude_networks(
-    nets: list, excludes: list
-) -> list:
+def _exclude_networks(nets: list, excludes: list) -> list:
     if not nets or not excludes:
         return nets
-    collapsed_ex = list(ipaddress.collapse_addresses(excludes))
-    current = list(ipaddress.collapse_addresses(nets))
-    for ex in collapsed_ex:
-        next_nets = []
-        for net in current:
-            if not net.overlaps(ex):
-                next_nets.append(net)
-            elif net.subnet_of(ex):
-                continue
-            else:
-                next_nets.extend(net.address_exclude(ex))
-        current = next_nets
-    return current
+    collapsed_nets = sorted(
+        ipaddress.collapse_addresses(nets), key=lambda n: int(n.network_address)
+    )
+    collapsed_ex = sorted(
+        ipaddress.collapse_addresses(excludes), key=lambda n: int(n.network_address)
+    )
+    addr_cls = type(collapsed_nets[0].network_address)
+    result = []
+    ex_idx = 0
+    ex_len = len(collapsed_ex)
+    for net in collapsed_nets:
+        cur_start = int(net.network_address)
+        net_end = int(net.broadcast_address)
+        while ex_idx < ex_len and int(collapsed_ex[ex_idx].broadcast_address) < cur_start:
+            ex_idx += 1
+        k = ex_idx
+        while k < ex_len and int(collapsed_ex[k].network_address) <= net_end:
+            ex_start = int(collapsed_ex[k].network_address)
+            ex_end = int(collapsed_ex[k].broadcast_address)
+            if ex_start > cur_start:
+                result.extend(
+                    ipaddress.summarize_address_range(
+                        addr_cls(cur_start), addr_cls(ex_start - 1)
+                    )
+                )
+            cur_start = max(cur_start, ex_end + 1)
+            if cur_start > net_end:
+                break
+            k += 1
+        if cur_start <= net_end:
+            result.extend(
+                ipaddress.summarize_address_range(addr_cls(cur_start), addr_cls(net_end))
+            )
+    return list(ipaddress.collapse_addresses(result))
 
 
 @dataclass
@@ -440,10 +461,21 @@ class ClassicalSet:
                         raise ValueError(f"[{source_name}] 非法域名后缀: {raw!r}")
                     continue
                 self.raw_count += 1
-            elif rtype in {"DOMAIN", "DOMAIN-WILDCARD"}:
+            elif rtype == "DOMAIN":
                 if not self.domains.add_exact(target):
                     if strict:
                         raise ValueError(f"[{source_name}] 非法域名: {raw!r}")
+                    continue
+                self.raw_count += 1
+            elif rtype == "DOMAIN-WILDCARD":
+                ok = (
+                    self.domains.add_suffix(target[2:])
+                    if target.startswith("+.")
+                    else self.domains.add_exact(target)
+                )
+                if not ok:
+                    if strict:
+                        raise ValueError(f"[{source_name}] 非法通配域名: {raw!r}")
                     continue
                 self.raw_count += 1
             elif rtype in {"IP-CIDR", "IP-CIDR6"}:
@@ -889,8 +921,8 @@ def main() -> int:
         "# Mihomo 多源去重规则集 (Auto-Generated Release Branch)",
         "",
         f"- **最近自动构建时间**: `{now_str}`",
-        "- **上游数据源**: `MetaCubeX/meta-rules-dat` + `Loyalsoldier/clash-rules` + `VPSDance/ai-proxy-rules` + `TG-Twilight/AWAvenue-Ads-Rule` + `Cats-Team/AdRules` + `hagezi/dns-blocklists` + `anti-AD` (`dead-horse` 白名单) + `Aethersailor` + `DustinWin` + `SukkaW` + `gaoyifan/china-operator-ip` + `Hackl0us/GeoIP2-CN` + `blackmatrix7` + `uselibrary/PCDN` + `custom/` 个人规则",
-        "- **去重算法**: 父子域名后缀树剪枝（`+.example.com` 自动剔除多余子域名，原生兼容 AdBlock `||domain^` 与多级通配符）+ IPv4/IPv6 相邻与重叠 CIDR 子网合并 + 拓扑依赖跨集合防污染剥离",
+        "- **上游数据源**: `MetaCubeX/meta-rules-dat` + `Loyalsoldier/clash-rules` + `VPSDance/ai-proxy-rules` + `Aethersailor` + `DustinWin` + `SukkaW` + `gaoyifan/china-operator-ip` + `blackmatrix7` + `custom/` 个人规则（纯分流无去广告）",
+        "- **去重算法**: 父子域名后缀树剪枝（`+.example.com` 自动剔除多余子域名，原生兼容多级通配符）+ IPv4/IPv6 相邻与重叠 CIDR 子网合并 + 拓扑依赖跨集合防污染剥离",
         "",
         "## 构建统计明细",
         "",
