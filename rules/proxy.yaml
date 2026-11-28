@@ -1,0 +1,3 @@
+# proxy.yaml - Custom proxy rules
+payload:
+  - DOMAIN,placeholder.invalid
